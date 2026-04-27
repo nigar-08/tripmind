@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: tripmind
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: TRIPMIND_AI_PROVIDER
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: XAI_API_KEY
+        sync: false
+      - key: TRIPMIND_PLACES_PROVIDER
+        value: hybrid
+      - key: GEOAPIFY_API_KEY
+        sync: false
+      - key: OPENTRIPMAP_API_KEY
+        sync: false
+      - key: TRIPMIND_WEATHER_PROVIDER
+        value: openweather
+      - key: OPENWEATHER_API_KEY
+        sync: false

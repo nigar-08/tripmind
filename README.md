@@ -56,7 +56,7 @@ cp .env.example .env
 
 3. Open:
 
-- App: `http://127.0.0.1:8080`
+- App: `http://127.0.0.1:8082`
 - H2 console: `http://127.0.0.1:8080/h2-console`
 
 ## Run With Docker
@@ -86,7 +86,7 @@ docker compose up --build
 
 This setup runs:
 
-- `tripmind-app` on port `8080`
+- `tripmind-app` on port `8082`
 - `tripmind-redis` on port `6379`
 
 Persistent data is stored in:
@@ -114,6 +114,16 @@ To run the test suite:
 ```bash
 ./mvnw test
 ```
+
+## Deployment
+
+The easiest public deployment path for this project is Render.
+
+- The repo includes a `render.yaml` blueprint
+- The app supports host-assigned ports through `PORT`
+- The `render` profile disables Redis-only workflow enhancements so the public demo can run as a single web service
+
+If you deploy on Render, set the required API keys in the dashboard before the first deploy.
 
 ## Current Limitations
 
