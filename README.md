@@ -1,15 +1,17 @@
 # TripMind
 
-TripMind is a Spring Boot travel planning application that turns free-form chat into a structured trip plan with budget checks, flight and hotel estimates, weather context, trip advice, itinerary generation, and booking handoff links.
+TripMind is a Spring Boot travel planning project that turns a chat-style trip request into a structured travel plan. Instead of only giving generic suggestions, it tries to check feasibility first and then build a usable plan with budget context, flight and hotel estimates, weather guidance, advisor notes, and a day-by-day itinerary.
 
-## What It Does
+## Features
 
-- Collects trip details through natural chat instead of a rigid form
-- Separates exploratory travel chat from planning mode
-- Clarifies missing or ambiguous fields like dates, trip type, and budget scope
-- Generates a plan with budget, flights, hotels, weather, advisor notes, and itinerary
-- Uses booking links to continue into external travel sites with trip context prefilled
-- Supports graceful fallbacks when live provider data is weak or unavailable
+- Chat-based trip planning instead of a fixed form
+- Separation between exploratory travel chat and actual planning mode
+- Clarification of missing or ambiguous inputs like dates, trip type, and budget scope
+- Budget verdict with estimated category-wise breakdown
+- Flight and hotel planning with booking handoff links
+- Weather context, packing guidance, and advisor notes
+- Day-by-day itinerary generation
+- Fallback handling when live or provider data is weak
 
 ## Tech Stack
 
@@ -21,7 +23,7 @@ TripMind is a Spring Boot travel planning application that turns free-form chat 
 - Redis Streams for workflow traces and agent events
 - External provider integrations for places and weather
 
-## Project Structure
+## Project Layout
 
 - `src/main/java` - application, controller, service, workflow, and agent logic
 - `src/main/resources/static/index.html` - frontend UI
@@ -31,14 +33,14 @@ TripMind is a Spring Boot travel planning application that turns free-form chat 
 - `Dockerfile` - container image build
 - `docker-compose.yml` - local app + Redis setup
 
-## Run Locally
+## Local Setup
 
-### Requirements
+### Prerequisites
 
 - Java 21
 - Maven wrapper included in the repo
 
-### Steps
+### Run the app
 
 1. Copy environment variables:
 
@@ -59,12 +61,12 @@ cp .env.example .env
 
 ## Run With Docker
 
-### Requirements
+### Prerequisites
 
 - Docker
 - Docker Compose
 
-### Steps
+### Start the containers
 
 1. Copy environment variables:
 
@@ -87,14 +89,14 @@ This setup runs:
 - `tripmind-app` on port `8080`
 - `tripmind-redis` on port `6379`
 
-Application data is stored in:
+Persistent data is stored in:
 
 - `./docker-data/app`
 - `./docker-data/redis`
 
 ## Environment Variables
 
-The app can run in rule-based mode with no paid model key. Add only the providers you want to use.
+The project can run in rule-based mode without a paid model key. Add only the providers you want to use.
 
 - `TRIPMIND_AI_PROVIDER`
 - `OPENAI_API_KEY`
@@ -107,19 +109,11 @@ The app can run in rule-based mode with no paid model key. Add only the provider
 
 ## Testing
 
-Run the test suite with:
+To run the test suite:
 
 ```bash
 ./mvnw test
 ```
-
-## Suggested GitHub README Additions Later
-
-- screenshots of the home screen and generated plan
-- architecture diagram
-- deployment link
-- known limitations
-- future improvements
 
 ## Current Limitations
 
@@ -128,15 +122,10 @@ Run the test suite with:
 - Broad country-level destinations should be narrowed to a city for the best plans
 - Advanced multi-city optimization is still limited
 
-## Good Student Project Process
+## Next Improvements
 
-This project is in a realistic student-to-portfolio path:
-
-1. build the app locally
-2. test and harden real user chat flows
-3. document it properly
-4. containerize it with Docker
-5. publish it on GitHub
-6. deploy a demo
-7. collect feedback
-8. improve it iteratively
+- Add screenshots of the main chat flow and generated plan
+- Publish a hosted demo link
+- Improve city-level grounding for broad country requests
+- Expand multi-city and travel-time validation
+- Add stronger save/share and plan history features
