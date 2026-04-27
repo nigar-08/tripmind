@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripMind — Agentic Travel Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg: #08111f;
+            --bg2: #0e1d33;
+            --surface: rgba(12, 24, 43, 0.88);
+            --surface2: rgba(17, 32, 56, 0.94);
+            --surface3: rgba(28, 46, 76, 0.92);
+            --border: rgba(168, 192, 255, 0.08);
+            --border2: rgba(168, 192, 255, 0.18);
+            --text: #eef4ff;
+            --text2: #aebad3;
+            --text3: #6f7f9d;
+            --accent: #62c6ff;
+            --accent2: #2de0b7;
+            --accent3: #ffd36b;
+            --green: #4ade80;
+            --amber: #fbbf24;
+            --red: #f87171;
+            --radius: 24px;
+            --radius-sm: 16px;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at top left, rgba(98,198,255,0.14), transparent 30%),
+                radial-gradient(circle at top right, rgba(45,224,183,0.12), transparent 28%),
+                linear-gradient(180deg, var(--bg2) 0%, var(--bg) 55%);
+        }
+
+        .shell {
+            width: 100%;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0 18px;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 30px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #ffffff 45%, var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-sub {
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .status-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text2);
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid var(--border2);
+            backdrop-filter: blur(12px);
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.55; transform: scale(0.86); }
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .hero-card, .hero-proof, .chat-panel, .signal-card, .recent-card {
+            background: linear-gradient(180deg, rgba(13, 27, 48, 0.92), rgba(10, 20, 36, 0.92));
+            border: 0.5px solid var(--border2);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::before, .hero-proof::before, .chat-panel::before, .signal-card::before, .recent-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top left, rgba(98,198,255,0.12), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(45,224,183,0.10), transparent 30%);
+            pointer-events: none;
+        }
+
+        .hero-card-inner, .hero-proof-inner {
+            position: relative;
+            padding: 28px;
+        }
+
+        .hero-label, .card-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .card-copy {
+            margin-top: 6px;
+            font-size: 12px;
+            line-height: 1.55;
+            color: var(--text2);
+        }
+
+        .hero-label { color: var(--accent2); margin-bottom: 12px; }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(34px, 5vw, 54px);
+            line-height: 0.97;
+            max-width: 10ch;
+            margin: 0 0 14px;
+        }
+
+        .hero-copy {
+            max-width: 58ch;
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text2);
+            margin-bottom: 22px;
+        }
+
+        .hero-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hero-pill, .prompt-chip {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid var(--border2);
+            font-size: 12px;
+            color: var(--text2);
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .hero-pill:hover, .prompt-chip:hover {
+            transform: translateY(-1px);
+            border-color: rgba(98,198,255,0.35);
+        }
+
+        .hero-proof-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .proof-tile {
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid var(--border);
+        }
+
+        .proof-label {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 6px;
+        }
+
+        .proof-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .proof-copy {
+            margin-top: 4px;
+            font-size: 12px;
+            line-height: 1.55;
+            color: var(--text2);
+        }
+
+        .main {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) 360px;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .chat-panel {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 260px);
+            min-height: 620px;
+            position: sticky;
+            top: 16px;
+        }
+
+        .workspace-strip {
+            padding: 18px 20px 0;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .workspace-card, .signal-item, .snapshot-card, .plan-card, .recent-item, .comparison-card {
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.035);
+            border: 0.5px solid var(--border);
+        }
+
+        .workspace-label, .signal-name, .snapshot-label, .mini-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text3);
+            margin-bottom: 8px;
+        }
+
+        .workspace-value, .snapshot-value {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.35;
+            color: var(--text);
+        }
+
+        .workspace-meta {
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        .chat-header {
+            position: relative;
+            z-index: 1;
+            padding: 18px 20px 16px;
+            border-bottom: 0.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+        }
+
+        .chat-header-info h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .chat-header-info p {
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        .planning-badge {
+            margin-left: auto;
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(45,224,183,0.12);
+            color: var(--accent2);
+            border: 0.5px solid rgba(45,224,183,0.28);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+            position: relative;
+            z-index: 1;
+        }
+
+        .messages::-webkit-scrollbar { width: 4px; }
+        .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+        .message {
+            max-width: 82%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.6;
+            animation: fadeUp 0.25s ease-out;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bot-message {
+            background: var(--surface2);
+            border: 0.5px solid var(--border);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .typing-message {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text2);
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent2);
+            animation: pulse 0.85s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.12s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.24s; }
+
+        .user-message {
+            background: linear-gradient(135deg, rgba(98,198,255,0.24), rgba(45,224,183,0.16));
+            border: 0.5px solid rgba(98,198,255,0.3);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .input-row {
+            position: sticky;
+            bottom: 0;
+            z-index: 1;
+            padding: 16px;
+            border-top: 0.5px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(10, 20, 36, 0.96);
+            backdrop-filter: blur(12px);
+        }
+
+        .msg-input {
+            flex: 1;
+            background: var(--surface2);
+            border: 0.5px solid var(--border2);
+            border-radius: 12px;
+            padding: 13px 16px;
+            font-size: 14px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            outline: none;
+        }
+
+        .msg-input::placeholder { color: var(--text3); }
+        .msg-input:focus { border-color: rgba(98,198,255,0.36); }
+
+        .send-btn, .action-btn {
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .action-row {
+            position: relative;
+            z-index: 1;
+            padding: 0 16px 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: rgba(10, 20, 36, 0.96);
+        }
+
+        .action-btn {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid var(--border2);
+            color: var(--text2);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .action-btn.primary {
+            background: rgba(98,198,255,0.12);
+            color: var(--accent);
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: calc(100vh - 260px);
+            overflow-y: auto;
+            padding-right: 4px;
+            position: sticky;
+            top: 16px;
+        }
+
+        .right-panel::-webkit-scrollbar { width: 4px; }
+        .right-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+        .signal-card {
+            padding: 16px;
+        }
+
+        .history-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .history-item {
+            padding: 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.035);
+            border: 0.5px solid var(--border);
+            display: grid;
+            gap: 8px;
+        }
+
+        .history-meta {
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        .history-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .signal-grid, .snapshot-grid, .plan-grid {
+            display: grid;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .signal-grid {
+            grid-template-columns: 1fr 1fr;
+            margin-top: 12px;
+        }
+
+        .snapshot-grid {
+            grid-template-columns: 1fr 1fr;
+            margin-top: 14px;
+        }
+
+        .snapshot-card.full, .plan-card.full, .comparison-card {
+            grid-column: 1 / -1;
+        }
+
+        .signal-value, .metric-strong {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.35;
+            color: var(--text);
+        }
+
+        .plan-zone, .missing-zone {
+            position: relative;
+            z-index: 1;
+            margin-top: 16px;
+        }
+
+        .empty-state {
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.03);
+            border: 0.5px dashed rgba(168, 192, 255, 0.18);
+            color: var(--text3);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .status-note {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(45,224,183,0.12);
+            color: var(--accent2);
+            border: 0.5px solid rgba(45,224,183,0.25);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .plan-grid {
+            grid-template-columns: 1fr 1fr;
+            margin-top: 16px;
+        }
+
+        .plan-card h3, .comparison-card h3 {
+            margin: 0 0 8px;
+            font-size: 15px;
+        }
+
+        .confirm-card {
+            padding: 18px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(98,198,255,0.10), rgba(255,255,255,0.03));
+            border: 0.5px solid rgba(98,198,255,0.22);
+            display: grid;
+            gap: 12px;
+        }
+
+        .confirm-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .confirm-chip {
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 0.5px solid var(--border2);
+            color: var(--text2);
+            font-size: 12px;
+        }
+
+        .confirm-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .verdict-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        .verdict-pill.good {
+            background: rgba(74, 222, 128, 0.12);
+            border: 0.5px solid rgba(74, 222, 128, 0.3);
+            color: #86efac;
+        }
+
+        .verdict-pill.tight {
+            background: rgba(251, 191, 36, 0.12);
+            border: 0.5px solid rgba(251, 191, 36, 0.28);
+            color: #fde68a;
+        }
+
+        .verdict-pill.not-feasible, .verdict-pill.not_feasible {
+            background: rgba(248, 113, 113, 0.12);
+            border: 0.5px solid rgba(248, 113, 113, 0.28);
+            color: #fca5a5;
+        }
+
+        .section-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 0;
+        }
+
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid var(--border);
+            color: var(--text2);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .section-tag.live {
+            color: #86efac;
+            border-color: rgba(74, 222, 128, 0.28);
+            background: rgba(74, 222, 128, 0.10);
+        }
+
+        .section-tag.estimated {
+            color: #fde68a;
+            border-color: rgba(251, 191, 36, 0.28);
+            background: rgba(251, 191, 36, 0.10);
+        }
+
+        .budget-bar {
+            margin-top: 12px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.035);
+            border: 0.5px solid var(--border);
+        }
+
+        .budget-track {
+            display: flex;
+            min-height: 12px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .budget-segment {
+            min-width: 24px;
+        }
+
+        .budget-segment.flights { background: linear-gradient(135deg, #4fc3ff, #2d8fff); }
+        .budget-segment.hotels { background: linear-gradient(135deg, #2de0b7, #26b28f); }
+        .budget-segment.activities { background: linear-gradient(135deg, #ffd36b, #ffb020); }
+        .budget-segment.contingency { background: linear-gradient(135deg, #ff9f7a, #ff6f61); }
+        .budget-segment.other { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+
+        .budget-legend {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .budget-legend-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 10px;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        .budget-swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .budget-swatch.flights { background: #4fc3ff; }
+        .budget-swatch.hotels { background: #2de0b7; }
+        .budget-swatch.activities { background: #ffd36b; }
+        .budget-swatch.contingency { background: #ff8f70; }
+        .budget-swatch.other { background: #94a3b8; }
+
+        .budget-percent {
+            color: var(--text3);
+            font-size: 11px;
+        }
+
+        .muted {
+            color: var(--text2);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        ul.clean {
+            margin: 0;
+            padding-left: 18px;
+            line-height: 1.65;
+            color: var(--text2);
+            font-size: 13px;
+        }
+
+        .link-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .booking-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 11px;
+            border-radius: 999px;
+            background: rgba(98,198,255,0.1);
+            border: 0.5px solid rgba(98,198,255,0.24);
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .booking-link.disabled {
+            background: rgba(148,163,184,0.08);
+            border: 0.5px solid rgba(148,163,184,0.18);
+            color: rgba(226,232,240,0.72);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .section-note {
+            margin-top: 8px;
+            color: var(--text2);
+            line-height: 1.5;
+            font-size: 12px;
+        }
+
+        .risk-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .risk-item {
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(251,191,36,0.08);
+            border: 0.5px solid rgba(251,191,36,0.22);
+            color: #fde68a;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .comparison-card {
+            margin-top: 14px;
+            background: linear-gradient(180deg, rgba(98,198,255,0.08), rgba(255,255,255,0.03));
+            border-color: rgba(98,198,255,0.22);
+        }
+
+        .intelligence-card {
+            margin-bottom: 14px;
+            padding: 16px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(45,224,183,0.10), rgba(98,198,255,0.04));
+            border: 0.5px solid rgba(45,224,183,0.22);
+            position: relative;
+            z-index: 1;
+        }
+
+        .intelligence-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .intelligence-metric {
+            padding: 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid var(--border);
+        }
+
+        .intelligence-metric strong {
+            display: block;
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .intelligence-metric span {
+            font-size: 11px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .compare-box {
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.035);
+            border: 0.5px solid var(--border);
+        }
+
+        .agent-list {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .agent-row {
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr) 10px;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .agent-row:last-child {
+            border-bottom: none;
+        }
+
+        .agent-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid var(--border);
+            font-size: 15px;
+        }
+
+        .agent-name {
+            font-size: 13px;
+            color: var(--text);
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .agent-status {
+            font-size: 11px;
+            color: var(--text3);
+            line-height: 1.45;
+        }
+
+        .agent-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text3);
+        }
+
+        .agent-row.running .agent-icon {
+            background: rgba(98,198,255,0.12);
+            border-color: rgba(98,198,255,0.28);
+        }
+
+        .agent-row.running .agent-name {
+            color: var(--accent);
+        }
+
+        .agent-row.running .agent-indicator {
+            background: var(--accent);
+            animation: pulse 1s infinite;
+        }
+
+        .agent-row.done .agent-icon {
+            background: rgba(74,222,128,0.12);
+            border-color: rgba(74,222,128,0.24);
+        }
+
+        .agent-row.done .agent-indicator {
+            background: var(--green);
+        }
+
+        .agent-row.degraded .agent-icon {
+            background: rgba(251,191,36,0.12);
+            border-color: rgba(251,191,36,0.26);
+        }
+
+        .agent-row.degraded .agent-name {
+            color: var(--amber);
+        }
+
+        .agent-row.degraded .agent-indicator {
+            background: var(--amber);
+        }
+
+        .open-sheet-btn {
+            margin-top: 14px;
+            width: 100%;
+            padding: 12px 14px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(98,198,255,0.22), rgba(45,224,183,0.18));
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            border: 0.5px solid rgba(98,198,255,0.28);
+        }
+
+        .secondary-action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .secondary-action {
+            border: 0.5px solid var(--border2);
+            background: rgba(255,255,255,0.04);
+            color: var(--text2);
+            border-radius: 999px;
+            padding: 9px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.72);
+            backdrop-filter: blur(7px);
+        }
+
+        .sheet-overlay.open {
+            display: flex;
+        }
+
+        .itinerary-sheet {
+            width: 100%;
+            max-width: 960px;
+            margin: auto;
+            border-radius: 30px;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(11,22,39,0.98), rgba(8,18,34,0.98));
+            border: 0.5px solid var(--border2);
+            box-shadow: 0 36px 100px rgba(0,0,0,0.5);
+            animation: sheetIn 0.28s ease-out;
+        }
+
+        @keyframes sheetIn {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sheet-header {
+            padding: 28px 32px 24px;
+            border-bottom: 0.5px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .sheet-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(26px, 4vw, 40px);
+            line-height: 1.05;
+            margin: 0 0 8px;
+        }
+
+        .sheet-subtitle {
+            color: var(--text2);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid var(--border2);
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .sheet-body {
+            padding: 24px 32px 30px;
+        }
+
+        .sheet-overview {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .overview-panel {
+            padding: 18px;
+            border-radius: 22px;
+            background: rgba(255,255,255,0.035);
+            border: 0.5px solid var(--border2);
+        }
+
+        .overview-kicker {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent2);
+            margin-bottom: 10px;
+        }
+
+        .overview-headline {
+            font-family: 'Playfair Display', serif;
+            font-size: 26px;
+            line-height: 1.05;
+            margin-bottom: 10px;
+        }
+
+        .overview-copy {
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--text2);
+        }
+
+        .overview-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .overview-metric {
+            padding: 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.035);
+            border: 0.5px solid var(--border);
+        }
+
+        .overview-metric strong {
+            display: block;
+            font-size: 16px;
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+
+        .overview-metric span {
+            font-size: 11px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .source-banner {
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(251,191,36,0.08);
+            border: 0.5px solid rgba(251,191,36,0.22);
+            color: #fde68a;
+            font-size: 12px;
+            line-height: 1.55;
+            margin-bottom: 18px;
+        }
+
+        .day-block {
+            border-radius: 18px;
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .day-header {
+            padding: 12px 16px;
+            background: rgba(98,198,255,0.1);
+            color: var(--accent);
+            border-bottom: 0.5px solid var(--border);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .day-toggle {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            background: transparent;
+            border: none;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            padding: 0;
+            text-align: left;
+        }
+
+        .day-toggle-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .day-toggle-sub {
+            color: var(--text2);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .day-chevron {
+            font-size: 18px;
+            line-height: 1;
+            transition: transform 0.18s ease;
+        }
+
+        .day-block.collapsed .day-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .day-block.collapsed .day-body {
+            display: none;
+        }
+
+        .day-body {
+            padding: 13px 16px;
+            color: var(--text2);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .day-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .day-detail {
+            padding: 10px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.035);
+            border: 0.5px solid var(--border);
+        }
+
+        .day-detail strong {
+            display: block;
+            color: var(--text);
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .tiny {
+            font-size: 12px;
+            color: var(--text3);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 1080px) {
+            .hero,
+            .main,
+            .workspace-strip,
+            .signal-grid,
+            .snapshot-grid,
+            .plan-grid,
+            .comparison-grid,
+            .sheet-overview,
+            .overview-metrics,
+            .day-detail-grid,
+            .hero-proof-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-panel,
+            .right-panel {
+                position: static;
+                max-height: none;
+            }
+
+            .chat-panel {
+                height: auto;
+                min-height: 680px;
+            }
+
+            .messages {
+                min-height: 420px;
+                max-height: 60vh;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .shell {
+                padding: 14px;
+            }
+
+            .header {
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .hero-card-inner,
+            .hero-proof-inner {
+                padding: 20px;
+            }
+
+            .hero-title {
+                max-width: 12ch;
+            }
+
+            .chat-panel {
+                min-height: 72vh;
+                border-radius: 22px;
+            }
+
+            .workspace-strip {
+                padding: 14px 14px 0;
+            }
+
+            .chat-header {
+                padding: 14px;
+            }
+
+            .messages {
+                padding: 14px;
+                min-height: 360px;
+                max-height: 54vh;
+            }
+
+            .message {
+                max-width: 94%;
+            }
+
+            .input-row {
+                padding: 12px;
+            }
+
+            .action-row {
+                padding: 0 12px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <div class="header">
+        <div class="brand">
+            <div class="logo">TripMind</div>
+            <div class="brand-sub">Travel Intelligence Workspace</div>
+        </div>
+        <div class="status-dot">
+            <span class="dot"></span>
+            <span id="topStatus">All agents online</span>
+        </div>
+    </div>
+
+    <section class="hero">
+        <div class="hero-card">
+            <div class="hero-card-inner">
+                <div class="hero-label">Before You Book</div>
+                <h1 class="hero-title">Decide if the trip actually makes sense.</h1>
+                <p class="hero-copy">
+                    TripMind turns a messy travel idea into a feasibility check, booking paths, budget pressure,
+                    agent traces, and a day-by-day itinerary. It is built for planning decisions, not just pretty travel text.
+                </p>
+                <div class="hero-pills">
+                    <button class="hero-pill prompt-chip" data-prompt="I want to go Goa from Mumbai with 2 people and budget 50000 from 10 to 14 May">Try Goa budget trip</button>
+                    <button class="hero-pill prompt-chip" data-prompt="I want to go Paris from Mumbai for 2 people with budget 500000 from 25 April to 2 May">Try Paris trip</button>
+                    <button class="hero-pill prompt-chip" data-prompt="Compare Goa and Dubai from Mumbai for 2 people with budget 150000 from 2026-05-10 to 2026-05-14">Compare destinations</button>
+                </div>
+            </div>
+        </div>
+        <div class="hero-proof">
+            <div class="hero-proof-inner">
+                <div class="card-title">Planning Signals</div>
+                <div class="hero-proof-grid">
+                    <div class="proof-tile">
+                        <div class="proof-label">Agents</div>
+                        <div class="proof-value">6 specialists</div>
+                        <div class="proof-copy">Budget, flights, hotels, weather, advisor, and itinerary each do one job.</div>
+                    </div>
+                    <div class="proof-tile">
+                        <div class="proof-label">Budget</div>
+                        <div class="proof-value">Pressure score</div>
+                        <div class="proof-copy">The planner shows if the trip fits, feels tight, or needs revision.</div>
+                    </div>
+                    <div class="proof-tile">
+                        <div class="proof-label">Booking</div>
+                        <div class="proof-value">Real paths</div>
+                        <div class="proof-copy">Flight and hotel buttons open partner searches with trip context.</div>
+                    </div>
+                    <div class="proof-tile">
+                        <div class="proof-label">Memory</div>
+                        <div class="proof-value">Saved plans</div>
+                        <div class="proof-copy">Sessions and generated plans persist for feedback and later review.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="main">
+        <div class="chat-panel">
+            <div class="workspace-strip">
+                <div class="workspace-card">
+                    <div class="workspace-label">Destination</div>
+                    <div class="workspace-value" id="wsDestination">Not set</div>
+                </div>
+                <div class="workspace-card">
+                    <div class="workspace-label">Travel Window</div>
+                    <div class="workspace-value" id="wsDates">Not set</div>
+                </div>
+                <div class="workspace-card">
+                    <div class="workspace-label">Budget</div>
+                    <div class="workspace-value" id="wsBudget">Not set</div>
+                </div>
+                <div class="workspace-card">
+                    <div class="workspace-label">Planning State</div>
+                    <div class="workspace-value" id="wsState">Collecting details</div>
+                </div>
+            </div>
+
+            <div class="chat-header">
+                <div class="avatar">✦</div>
+                <div class="chat-header-info">
+                    <h3>TripMind Workspace</h3>
+                    <p>Budget logic, booking paths, itinerary generation, and agent trace</p>
+                </div>
+                <div class="planning-badge" id="planningBadge">Session inactive</div>
+            </div>
+
+            <div class="messages" id="messages">
+                <div class="message bot-message">Hey! I'm TripMind — tell me where you want to go, from where, travelers, budget, and dates. I’ll check feasibility first, then light up the agents for flights, hotels, weather, advice, and itinerary.</div>
+            </div>
+
+            <div class="input-row">
+                <input id="chatInput" class="msg-input" placeholder="Example: I want to go Goa from Mumbai for 2 people with budget 50000 from 10 to 14 May">
+                <button id="sendBtn" class="send-btn">➜</button>
+            </div>
+            <div class="action-row">
+                <button id="planBtn" class="action-btn primary">Generate From Session</button>
+                <button id="openCurrentPlanBtn" class="action-btn" style="display:none;">Open Current Plan</button>
+                <button id="resetBtn" class="action-btn">New Session</button>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="signal-card">
+                <div class="card-title">Current Trip Details</div>
+                <div class="card-copy">This is the live trip TripMind is building from your chat. If anything is missing, it will appear here.</div>
+                <div class="signal-grid" id="snapshotGrid"></div>
+                <div class="missing-zone" id="missingZone">
+                    <div class="empty-state">Trip fields will appear here as the chat fills them in.</div>
+                </div>
+            </div>
+
+            <div class="signal-card">
+                <div class="card-title">Planner Progress</div>
+                <div class="card-copy">These are the specialist agents working behind the scenes. Green means completed, amber means degraded fallback.</div>
+                <div class="agent-list" id="agentList"></div>
+            </div>
+
+            <div class="signal-card">
+                <div class="card-title">Current Plan</div>
+                <div class="card-copy">Once the trip is ready, this section becomes your quick summary and launch point for the full itinerary sheet.</div>
+                <div class="plan-zone" id="planZone">
+                    <div class="empty-state">Once enough details are captured, the agent output appears here: budget verdict, booking paths, risks, and a day-by-day itinerary.</div>
+                </div>
+            </div>
+
+            <div class="signal-card">
+                <div class="card-title">Plan History</div>
+                <div class="card-copy">TripMind keeps the last few generated plans in this session so you can reopen, share, or compare them later.</div>
+                <div class="history-list" id="historyList">
+                    <div class="empty-state">Generated plans will appear here once you create them.</div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<div class="sheet-overlay" id="itineraryOverlay">
+    <div class="itinerary-sheet">
+        <div class="sheet-header">
+            <div>
+                <h2 class="sheet-title" id="sheetTitle">TripMind Plan</h2>
+                <div class="sheet-subtitle" id="sheetSubtitle">Your generated itinerary will appear here.</div>
+            </div>
+            <button class="close-btn" id="closeSheetBtn">×</button>
+        </div>
+        <div class="sheet-body" id="sheetBody"></div>
+    </div>
+</div>
+
+<script>
+    const state = {
+        sessionId: null,
+        latestRequestId: null,
+        latestPlan: null,
+        latestComparison: null,
+        lastAutoOpenedRequestId: null,
+        pendingFeedTimer: null,
+        planHistory: []
+    };
+
+    const messagesEl = document.getElementById('messages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const planBtn = document.getElementById('planBtn');
+    const openCurrentPlanBtn = document.getElementById('openCurrentPlanBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const snapshotGrid = document.getElementById('snapshotGrid');
+    const missingZone = document.getElementById('missingZone');
+    const planZone = document.getElementById('planZone');
+    const topStatus = document.getElementById('topStatus');
+    const planningBadge = document.getElementById('planningBadge');
+    const agentList = document.getElementById('agentList');
+    const itineraryOverlay = document.getElementById('itineraryOverlay');
+    const closeSheetBtn = document.getElementById('closeSheetBtn');
+    const sheetTitle = document.getElementById('sheetTitle');
+    const sheetSubtitle = document.getElementById('sheetSubtitle');
+    const sheetBody = document.getElementById('sheetBody');
+
+    const wsDestination = document.getElementById('wsDestination');
+    const wsDates = document.getElementById('wsDates');
+    const wsBudget = document.getElementById('wsBudget');
+    const wsState = document.getElementById('wsState');
+    const historyList = document.getElementById('historyList');
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function formatMoney(value) {
+        return `₹${Number(value || 0).toLocaleString('en-IN')}`;
+    }
+
+    function formatEstimate(value) {
+        return `~${formatMoney(value)} est.`;
+    }
+
+    document.querySelectorAll('[data-prompt]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            chatInput.value = btn.dataset.prompt;
+            sendMessage();
+        });
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+    planBtn.addEventListener('click', () => {
+        if (!state.sessionId) {
+            appendMessage('bot', 'Start a session first, then I can generate from the captured trip details.');
+            return;
+        }
+        chatInput.value = 'Generate the trip plan now';
+        sendMessage();
+    });
+
+    openCurrentPlanBtn.addEventListener('click', () => {
+        if (!state.latestPlan) {
+            appendMessage('bot', 'Generate a trip plan first, then I can reopen the current trip sheet.');
+            return;
+        }
+        openItinerarySheet(state.latestPlan, state.latestComparison);
+    });
+
+    resetBtn.addEventListener('click', resetSession);
+    closeSheetBtn.addEventListener('click', () => itineraryOverlay.classList.remove('open'));
+    itineraryOverlay.addEventListener('click', event => {
+        if (event.target === itineraryOverlay) {
+            itineraryOverlay.classList.remove('open');
+        }
+    });
+    chatInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+
+    async function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        appendMessage('user', message);
+        chatInput.value = '';
+        planningBadge.textContent = 'TripMind is thinking';
+        topStatus.textContent = 'Session active';
+        const typingId = showTyping();
+        startPendingAgentFeed(message);
+
+        try {
+            const response = await fetch('/api/v1/trips/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: state.sessionId,
+                    message
+                })
+            });
+
+            const payload = await response.json();
+            removeTyping(typingId);
+            stopPendingAgentFeed();
+            const previousRequestId = state.latestRequestId;
+            state.sessionId = payload.sessionId;
+            state.latestRequestId = payload.plan?.requestId || payload.tripSnapshot?.latestRequestId || state.latestRequestId;
+            state.latestPlan = payload.plan || state.latestPlan;
+            state.latestComparison = payload.comparison || null;
+            state.planHistory = payload.planHistory || state.planHistory;
+
+            appendMessage('bot', payload.response);
+            if (payload.plan) {
+                appendMessage('bot', `Your ${payload.plan.destination} itinerary is ready. I prepared the budget verdict, booking paths, agent stages, and full trip sheet.`);
+                if (window.confetti) {
+                    window.confetti({ particleCount: 70, spread: 60, origin: { y: 0.72 } });
+                }
+            }
+            renderWorkspace(payload);
+            renderSnapshot(payload);
+            renderPlan(payload.plan, payload.comparison, payload);
+            renderAgentPipeline(payload.plan?.stages || []);
+            renderPlanHistory(state.planHistory || []);
+            updatePlanActions();
+
+            planningBadge.textContent = payload.conversationState.replace('_', ' ');
+
+            if (payload.plan) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('plan', payload.plan.requestId);
+                window.history.replaceState({}, '', url);
+                const autoOpenKey = `${payload.plan.requestId || state.latestRequestId || 'plan'}:${payload.plan.destination || 'trip'}`;
+                if (state.lastAutoOpenedRequestId !== autoOpenKey) {
+                    state.lastAutoOpenedRequestId = autoOpenKey;
+                    document.getElementById('planZone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    openItinerarySheet(payload.plan, payload.comparison);
+                }
+            }
+        } catch (error) {
+            removeTyping(typingId);
+            stopPendingAgentFeed();
+            appendMessage('bot', 'I could not reach the TripMind planner right now. Please keep the project server running and try again.');
+            planningBadge.textContent = 'Connection issue';
+        }
+    }
+
+    function updatePlanActions() {
+        const hasPlan = Boolean(state.latestPlan);
+        openCurrentPlanBtn.style.display = hasPlan ? 'inline-flex' : 'none';
+        openCurrentPlanBtn.textContent = hasPlan ? 'Open Current Plan' : 'Open Current Plan';
+    }
+
+    function readableSource(source, fallback) {
+        if (!source || /placeholder/i.test(source)) return fallback;
+        return source;
+    }
+
+    function readableEstimateLabel(label, fallback) {
+        if (!label) return fallback;
+        return label.replace(/[-_]/g, ' ');
+    }
+
+    function compactNarrative(text, fallback, limit = 320) {
+        const value = (text || fallback || '').trim();
+        if (!value) return '';
+        if (value.length <= limit) return value;
+        const shortened = value.slice(0, limit);
+        const cut = shortened.lastIndexOf(' ');
+        return `${(cut > 120 ? shortened.slice(0, cut) : shortened).trim()}…`;
+    }
+
+    function sectionReliabilityTag(label, mode = 'estimated') {
+        return `<span class="section-tag ${escapeHtml(mode)}">${escapeHtml(label)}</span>`;
+    }
+
+    function budgetSegments(budget = {}) {
+        const categories = budget.costBreakdown || budget.categoryBudgets || {};
+        const labelMap = {
+            flights: 'Flights',
+            hotels: 'Hotels',
+            activities: 'Activities',
+            contingency: 'Buffer'
+        };
+        const total = Object.values(categories).reduce((sum, value) => sum + Number(value || 0), 0);
+        if (!total) return '';
+        const orderedKeys = ['flights', 'hotels', 'activities', 'contingency'];
+        const usedKeys = new Set();
+        const segments = [];
+
+        orderedKeys.forEach(key => {
+            const amount = Number(categories[key] || 0);
+            if (!amount) return;
+            usedKeys.add(key);
+            segments.push({ key, label: labelMap[key] || key, amount, percent: Math.round((amount / total) * 100) });
+        });
+
+        Object.entries(categories).forEach(([key, raw]) => {
+            if (usedKeys.has(key)) return;
+            const amount = Number(raw || 0);
+            if (!amount) return;
+            segments.push({ key: 'other', label: key.replace(/_/g, ' '), amount, percent: Math.round((amount / total) * 100) });
+        });
+
+        return `
+            <div class="budget-bar">
+                <div class="budget-track">
+                    ${segments.map(segment => `
+                        <div class="budget-segment ${segment.key}" style="width:${Math.max(segment.percent, 6)}%;" title="${escapeHtml(segment.label)} · ${formatMoney(segment.amount)}"></div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="budget-legend">
+                ${segments.map(segment => `
+                    <div class="budget-legend-row">
+                        <span class="budget-swatch ${segment.key}"></span>
+                        <span>${escapeHtml(segment.label)}</span>
+                        <span>${formatMoney(segment.amount)}</span>
+                        <span class="budget-percent">${segment.percent}%</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function renderDayBlocks(days = [], highlights = []) {
+        if (days.length) {
+            return days.map((day, index) => `
+                <div class="day-block ${index > 1 ? 'collapsed' : ''}">
+                    <div class="day-header">
+                        <button class="day-toggle" type="button">
+                            <div class="day-toggle-meta">
+                                <span>Day ${day.day || index + 1} · ${escapeHtml(day.date || '')} · ${escapeHtml(day.theme || 'Trip day')}</span>
+                                <span class="day-toggle-sub">${escapeHtml(compactNarrative(day.budgetNote, 'Tap to expand the day structure.', 110))}</span>
+                            </div>
+                            <span class="day-chevron">▾</span>
+                        </button>
+                    </div>
+                    <div class="day-body">
+                        <div class="day-detail-grid">
+                            <div class="day-detail"><strong>Morning</strong>${escapeHtml(day.morning || 'Flexible start')}</div>
+                            <div class="day-detail"><strong>Afternoon</strong>${escapeHtml(day.afternoon || 'Core experience')}</div>
+                            <div class="day-detail"><strong>Evening</strong>${escapeHtml(day.evening || 'Relaxed evening')}</div>
+                        </div>
+                        <div class="tiny" style="margin-top:10px;">${escapeHtml(day.budgetNote || '')}</div>
+                        ${(day.bookingHints || []).length ? `<ul class="clean" style="margin-top:8px;">${day.bookingHints.map(hint => `<li>${escapeHtml(hint)}</li>`).join('')}</ul>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        if (highlights.length) {
+            return highlights.map((day, index) => `
+                <div class="day-block ${index > 1 ? 'collapsed' : ''}">
+                    <div class="day-header">
+                        <button class="day-toggle" type="button">
+                            <div class="day-toggle-meta">
+                                <span>Day ${index + 1}</span>
+                                <span class="day-toggle-sub">Tap to expand the daily guidance.</span>
+                            </div>
+                            <span class="day-chevron">▾</span>
+                        </button>
+                    </div>
+                    <div class="day-body">${escapeHtml(day)}</div>
+                </div>
+            `).join('');
+        }
+
+        return `
+            <div class="day-block">
+                <div class="day-header">
+                    <button class="day-toggle" type="button">
+                        <div class="day-toggle-meta">
+                            <span>Itinerary</span>
+                            <span class="day-toggle-sub">TripMind will place the day structure here once itinerary context is ready.</span>
+                        </div>
+                        <span class="day-chevron">▾</span>
+                    </button>
+                </div>
+                <div class="day-body">A full day-by-day structure will appear here once the itinerary agent receives the plan context.</div>
+            </div>
+        `;
+    }
+
+    function bindDayToggles(root) {
+        root?.querySelectorAll('.day-toggle').forEach(button => {
+            button.addEventListener('click', () => {
+                button.closest('.day-block')?.classList.toggle('collapsed');
+            });
+        });
+    }
+
+    function appendMessage(type, text) {
+        const div = document.createElement('div');
+        div.className = `message ${type === 'user' ? 'user-message' : 'bot-message'}`;
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function showTyping() {
+        const id = `typing-${Date.now()}`;
+        const div = document.createElement('div');
+        div.id = id;
+        div.className = 'message bot-message typing-message';
+        div.innerHTML = `<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span>agents reading your trip details</span>`;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return id;
+    }
+
+    function removeTyping(id) {
+        document.getElementById(id)?.remove();
+    }
+
+    function startPendingAgentFeed(message) {
+        stopPendingAgentFeed();
+        const prompt = (message || '').toLowerCase();
+        const steps = [
+            ['budget-agent', 'running', 'Checking budget feasibility and spend lanes'],
+            ['flight-agent', 'running', 'Estimating route and flight pricing context'],
+            ['hotel-agent', 'running', 'Shaping stay strategy from the budget lane'],
+            ['weather-agent', 'running', 'Adding weather and seasonal context'],
+            ['trip-advisor-agent', 'running', 'Preparing feasibility advice and tradeoffs'],
+            ['itinerary-agent', 'running', 'Building the itinerary structure']
+        ];
+        if (!(prompt.includes('plan') || prompt.includes('generate') || prompt.includes('go ahead') || prompt.includes('yes'))) {
+            return;
+        }
+
+        let index = 0;
+        renderAgentPipeline([{
+            agent: steps[0][0],
+            status: steps[0][1],
+            summary: steps[0][2],
+            capability: 'live progress',
+            degraded: false
+        }]);
+
+        state.pendingFeedTimer = setInterval(() => {
+            index += 1;
+            const visible = steps.slice(0, Math.min(index + 1, steps.length)).map((step, idx, arr) => ({
+                agent: step[0],
+                status: idx === arr.length - 1 ? 'running' : 'completed',
+                summary: step[2],
+                capability: 'live progress',
+                degraded: false
+            }));
+            renderAgentPipeline(visible);
+            if (index >= steps.length - 1) {
+                clearInterval(state.pendingFeedTimer);
+                state.pendingFeedTimer = null;
+            }
+        }, 750);
+    }
+
+    function stopPendingAgentFeed() {
+        if (state.pendingFeedTimer) {
+            clearInterval(state.pendingFeedTimer);
+            state.pendingFeedTimer = null;
+        }
+    }
+
+    function renderWorkspace(payload) {
+        const snapshot = payload.tripSnapshot || {};
+        wsDestination.textContent = snapshot.destination || 'Not set';
+        wsDates.textContent = snapshot.departureDate && snapshot.returnDate
+            ? `${snapshot.departureDate} → ${snapshot.returnDate}`
+            : 'Not set';
+        wsBudget.textContent = snapshot.budget ? `₹${Number(snapshot.budget).toLocaleString('en-IN')}` : 'Not set';
+        wsState.textContent = payload.conversationState || 'Collecting details';
+    }
+
+    function renderSnapshot(payload) {
+        const snapshot = payload.tripSnapshot || {};
+        const entries = [
+            ['Origin', snapshot.origin],
+            ['Destination', snapshot.destination],
+            ['Travelers', snapshot.travelers],
+            ['Budget', snapshot.budget ? `₹${Number(snapshot.budget).toLocaleString('en-IN')}` : null],
+            ['Departure', snapshot.departureDate],
+            ['Return', snapshot.returnDate],
+            ['Vibe', snapshot.vibe],
+            ['Special Request', snapshot.specialRequest]
+        ].filter(([, value]) => value);
+
+        snapshotGrid.innerHTML = entries.length
+            ? entries.map(([label, value]) => `
+                <div class="snapshot-card ${label === 'Special Request' ? 'full' : ''}">
+                    <div class="snapshot-label">${label}</div>
+                    <div class="snapshot-value">${value}</div>
+                </div>
+            `).join('')
+            : '';
+
+        if (payload.missingFields?.length) {
+            missingZone.innerHTML = `<div class="empty-state">Still needed: ${payload.missingFields.join(', ')}</div>`;
+        } else {
+            missingZone.innerHTML = `<div class="status-note">Enough details captured for planning</div>`;
+        }
+    }
+
+    function renderPlan(plan, comparison, payload = null) {
+        const snapshot = payload?.tripSnapshot || {};
+        if (!plan && payload?.readyToPlan) {
+            const summaryChips = [
+                snapshot.origin && `From ${snapshot.origin}`,
+                snapshot.destination && `To ${snapshot.destination}`,
+                snapshot.departureDate && snapshot.returnDate && `${snapshot.departureDate} → ${snapshot.returnDate}`,
+                snapshot.travelers && `${snapshot.travelers} traveler(s)`,
+                snapshot.budget && `Budget ${formatMoney(snapshot.budget)}`,
+                snapshot.tripType && snapshot.tripType.replace(/_/g, ' ')
+            ].filter(Boolean);
+            planZone.innerHTML = `
+                <div class="confirm-card">
+                    <div class="mini-label">Before TripMind Generates</div>
+                    <h3 style="margin:0;">Here’s what I understood. Does this look right?</h3>
+                    <div class="confirm-summary">${summaryChips.map(item => `<div class="confirm-chip">${escapeHtml(item)}</div>`).join('')}</div>
+                    <div class="muted">Generate the plan if this looks right, or change any detail in the chat first. This keeps the agents from running on a wrong assumption.</div>
+                    <div class="confirm-actions">
+                        <button class="action-btn primary" id="confirmGenerateBtn">Looks good, generate plan</button>
+                        <button class="action-btn" id="editTripBtn">Edit details</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('confirmGenerateBtn')?.addEventListener('click', () => {
+                chatInput.value = 'generate plan';
+                sendMessage();
+            });
+            document.getElementById('editTripBtn')?.addEventListener('click', () => chatInput.focus());
+            return;
+        }
+        if (!plan) {
+            planZone.innerHTML = `<div class="empty-state">Once enough details are captured, the agent output appears here: budget verdict, booking paths, risks, and a day-by-day itinerary.</div>`;
+            return;
+        }
+
+        const budget = plan.budget || {};
+        const flights = plan.flights || {};
+        const hotels = plan.hotels || {};
+        const advisor = plan.advisor || {};
+        const itinerary = plan.itinerary || {};
+        const planning = plan.planningIntelligence || {};
+        const flightLinks = flights.bookingLinks || [];
+        const hotelLinks = hotels.bookingLinks || [];
+        const risks = plan.riskFlags || [];
+        const tradeoffs = budget.tradeoffLevers || [];
+        const realPlaces = itinerary.realPlaces || [];
+
+        let html = `
+            ${planning.tripArchetype ? `
+                <div class="intelligence-card">
+                    <div class="mini-label">Why This Plan Feels Smart</div>
+                    <h3>${escapeHtml(planning.tripArchetype)}</h3>
+                    <div class="muted">${escapeHtml(planning.planningMode || 'TripMind connected the agents into one planning flow.')}</div>
+                    <div class="intelligence-grid">
+                        <div class="intelligence-metric"><strong>${escapeHtml(planning.bookingReadiness || 'Planning ready')}</strong><span>Booking Readiness</span></div>
+                        <div class="intelligence-metric"><strong>${escapeHtml(planning.liveDataCoverage || 'Estimate-led planning')}</strong><span>Live Data Coverage</span></div>
+                        <div class="intelligence-metric"><strong>${escapeHtml(planning.sourceReliability || 'Hybrid planning')}</strong><span>Source Reliability</span></div>
+                        <div class="intelligence-metric"><strong>${escapeHtml(planning.travelerProfile || 'Trip profile')}</strong><span>Traveler Profile</span></div>
+                    </div>
+                    ${(planning.groundingNotes || []).length ? `<ul class="clean" style="margin-top:12px;">${planning.groundingNotes.slice(0, 3).map(note => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+                </div>
+            ` : ''}
+            <div class="plan-grid">
+                <div class="plan-card">
+                    <div class="mini-label">Trip Verdict</div>
+                    <div class="verdict-pill ${escapeHtml(plan.feasibility)}">${escapeHtml(plan.feasibility)}</div>
+                    <h3>${escapeHtml(plan.destination)} · ${escapeHtml(plan.feasibility)}</h3>
+                    <div class="muted">${escapeHtml(plan.summary)}</div>
+                </div>
+                <div class="plan-card">
+                    <div class="mini-label">Budget Engine</div>
+                    <h3>${formatMoney(budget.planningTotal || budget.estimatedTripCost)}</h3>
+                    <div class="tiny">Estimate ${formatMoney(budget.estimatedTripCost)} · Buffer ${formatMoney(budget.contingencyReserve)} · Pressure ${budget.pressureScore ?? 'n/a'}/100</div>
+                    ${budget.totalBudget ? `<div class="section-note">${formatMoney(budget.planningTotal || budget.estimatedTripCost)} of ${formatMoney(budget.totalBudget)} budget currently allocated.</div>` : ''}
+                    ${budgetSegments(budget)}
+                    ${budget.categoryBudgets ? `<div class="tiny" style="margin-top:8px;">Agent lanes: flights ${formatMoney(budget.categoryBudgets.flights)} · hotels ${formatMoney(budget.categoryBudgets.hotels)} · activities ${formatMoney(budget.categoryBudgets.activities)}</div>` : ''}
+                </div>
+                <div class="plan-card">
+                    <div class="mini-label">Flights</div>
+                    <h3>${escapeHtml(flights.route || 'Route pending')}</h3>
+                    <div class="tiny">Estimated fare ${formatEstimate(flights.estimatedTotal)} · lane ${formatMoney(flights.allocatedBudget)} · leaves ${formatMoney(flights.remainingAfterFlights)} · ${escapeHtml(readableEstimateLabel(flights.estimateType, 'market estimate'))}</div>
+                    <div class="section-tags">
+                        ${sectionReliabilityTag('Estimated fare', 'estimated')}
+                        ${sectionReliabilityTag(flightLinks.some(link => link.enabled !== false) ? 'Booking path ready' : 'Booking path incomplete', flightLinks.some(link => link.enabled !== false) ? 'live' : 'estimated')}
+                    </div>
+                    ${flights.bookingPath ? `<div class="section-note">${escapeHtml(compactNarrative(flights.bookingPath, '', 180))}</div>` : ''}
+                    ${renderBookingLinks(flightLinks)}
+                </div>
+                <div class="plan-card">
+                    <div class="mini-label">Hotels</div>
+                    <h3>${escapeHtml(hotels.stayStyle || 'Stay plan')}</h3>
+                    <div class="tiny">Estimated ${formatEstimate(hotels.estimatedNightly)} per night · ${hotels.nights || 0} nights · leaves ${formatMoney(hotels.remainingAfterHotels)}</div>
+                    <div class="section-tags">
+                        ${sectionReliabilityTag('Typical nightly rate', 'estimated')}
+                        ${sectionReliabilityTag(hotelLinks.some(link => link.enabled !== false) ? 'Live inventory path' : 'Search template only', hotelLinks.some(link => link.enabled !== false) ? 'live' : 'estimated')}
+                    </div>
+                    ${hotels.aiRecommendation ? `<div class="tiny" style="margin-top:8px;">${escapeHtml(compactNarrative(hotels.aiRecommendation, '', 220))}</div>` : ''}
+                    ${renderBookingLinks(hotelLinks)}
+                </div>
+                <div class="plan-card">
+                    <div class="mini-label">Weather</div>
+                    <h3>${escapeHtml(readableSource(plan.weather?.source, 'season-aware planning'))}</h3>
+                    <div class="tiny">${escapeHtml(plan.weather?.seasonSignal || 'planning-weather')}</div>
+                    <div class="section-tags">
+                        ${sectionReliabilityTag(/live|forecast/i.test(plan.weather?.source || '') ? 'Live weather' : 'Seasonal estimate', /live|forecast/i.test(plan.weather?.source || '') ? 'live' : 'estimated')}
+                    </div>
+                    <div class="section-note">${escapeHtml(compactNarrative(plan.weather?.summary, 'Weather context is being prepared.', 220))}</div>
+                    ${plan.weather?.travelTiming ? `<div class="tiny" style="margin-top:8px;">${escapeHtml(plan.weather.travelTiming)}</div>` : ''}
+                </div>
+                ${risks.length ? `
+                    <div class="plan-card full">
+                        <div class="mini-label">Planning Risk Flags</div>
+                        <div class="risk-list">${risks.map(risk => `<div class="risk-item"><strong>${escapeHtml(risk.severity || 'note')}</strong> ${escapeHtml(risk.message || '')}</div>`).join('')}</div>
+                    </div>
+                ` : ''}
+                <div class="plan-card full">
+                    <div class="mini-label">Trip Advisor</div>
+                    <h3>${escapeHtml(advisor.verdict || 'Advisor')} outlook</h3>
+                    <ul class="clean">${(advisor.recommendations || []).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+                    ${advisor.proactiveTip ? `<div class="section-note"><strong>Save-money tip:</strong> ${escapeHtml(advisor.proactiveTip)}</div>` : ''}
+                    ${advisor.visaNote ? `<div class="section-note"><strong>Visa note:</strong> ${escapeHtml(advisor.visaNote)}</div>` : ''}
+                    ${advisor.delightNote ? `<div class="section-note"><strong>One extra insight:</strong> ${escapeHtml(advisor.delightNote)}</div>` : ''}
+                    ${(advisor.nextSteps || []).length ? `<ul class="clean" style="margin-top:10px;">${advisor.nextSteps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ul>` : ''}
+                    ${tradeoffs.length ? `<div class="tiny" style="margin-top:10px;">Tradeoff levers: ${tradeoffs.map(escapeHtml).join(' · ')}</div>` : ''}
+                </div>
+                <div class="plan-card full">
+                    <div class="mini-label">Itinerary Preview</div>
+                    <h3>${escapeHtml(compactNarrative(itinerary.aiNarrative, itinerary.preview || 'Trip structure', 220))}</h3>
+                    ${itinerary.budgetNarrative ? `<div class="tiny" style="margin-bottom:10px;">${escapeHtml(itinerary.budgetNarrative)}</div>` : ''}
+                    <div class="section-tags">
+                        ${sectionReliabilityTag(/fallback/i.test(itinerary.placeSource || '') ? 'Area-based fallback' : 'Grounded places', /fallback/i.test(itinerary.placeSource || '') ? 'estimated' : 'live')}
+                        ${sectionReliabilityTag(realPlaces.length ? `${realPlaces.length} real places` : 'Template-backed planning', realPlaces.length ? 'live' : 'estimated')}
+                    </div>
+                    ${realPlaces.length ? `<div class="tiny" style="margin-bottom:10px;">Real places from ${escapeHtml(itinerary.placeSource || 'connected POI providers')}: ${realPlaces.slice(0, 6).map(escapeHtml).join(' · ')}</div>` : ''}
+                    <ul class="clean">${(itinerary.dayHighlights || []).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+                    <button class="open-sheet-btn" id="openSheetBtn">Open Full Trip Sheet</button>
+                    <div class="secondary-action-row">
+                        <button class="secondary-action" id="copyPlanBtn">Copy plan summary</button>
+                        <button class="secondary-action" id="sharePlanBtn">Copy share link</button>
+                    </div>
+                    <div class="tiny" style="margin-top:10px;">You can reopen this plan anytime from the chat actions below.</div>
+                </div>
+            </div>
+        `;
+
+        if (comparison) {
+            html += `
+                <div class="comparison-card">
+                    <div class="mini-label">Comparison</div>
+                    <h3>${escapeHtml(comparison.comparisonRequest)}</h3>
+                    <div class="muted">${escapeHtml(comparison.note)}</div>
+                    <div class="comparison-grid">
+                        <div class="compare-box">
+                            <div class="mini-label">Primary</div>
+                            <h3>${escapeHtml(plan.destination)}</h3>
+                            <div class="tiny">Budget fit: ${escapeHtml(plan.feasibility)}</div>
+                            <div class="tiny">Estimated cost: ${formatMoney(plan.budget?.estimatedTripCost)}</div>
+                        </div>
+                        <div class="compare-box">
+                            <div class="mini-label">Secondary</div>
+                            <h3>${escapeHtml(comparison.secondaryDestination)}</h3>
+                            <div class="tiny">Budget fit: ${escapeHtml(comparison.secondaryPlan?.feasibility || 'n/a')}</div>
+                            <div class="tiny">Estimated cost: ${formatMoney(comparison.secondaryPlan?.budget?.estimatedTripCost)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        planZone.innerHTML = html;
+        document.getElementById('openSheetBtn')?.addEventListener('click', () => openItinerarySheet(plan, comparison));
+        document.getElementById('copyPlanBtn')?.addEventListener('click', () => copyPlanSummary(plan));
+        document.getElementById('sharePlanBtn')?.addEventListener('click', () => copyShareLink(plan.requestId));
+    }
+
+    function renderPlanHistory(history = []) {
+        if (!history.length) {
+            historyList.innerHTML = `<div class="empty-state">Generated plans will appear here once you create them.</div>`;
+            return;
+        }
+        historyList.innerHTML = history.map(item => `
+            <div class="history-item">
+                <div class="mini-label">${escapeHtml(item.destination)} · ${escapeHtml(item.feasibility || 'plan')}</div>
+                <div class="muted">${escapeHtml(item.summary || `${item.origin} to ${item.destination}`)}</div>
+                <div class="history-meta">${escapeHtml(item.departureDate || '')}${item.returnDate ? ` → ${escapeHtml(item.returnDate)}` : ''} · ${formatMoney(item.budget)}</div>
+                <div class="history-actions">
+                    <button class="secondary-action" data-open-plan="${escapeHtml(item.requestId)}">Open</button>
+                    <button class="secondary-action" data-share-plan="${escapeHtml(item.requestId)}">Copy link</button>
+                </div>
+            </div>
+        `).join('');
+        historyList.querySelectorAll('[data-open-plan]').forEach(button => {
+            button.addEventListener('click', () => loadPlanById(button.getAttribute('data-open-plan')));
+        });
+        historyList.querySelectorAll('[data-share-plan]').forEach(button => {
+            button.addEventListener('click', () => copyShareLink(button.getAttribute('data-share-plan')));
+        });
+    }
+
+    async function loadPlanById(requestId) {
+        const response = await fetch(`/api/v1/trips/${requestId}`);
+        if (!response.ok) return;
+        const plan = await response.json();
+        state.latestPlan = plan;
+        state.latestRequestId = plan.requestId;
+        renderPlan(plan, null, { tripSnapshot: {} });
+        openItinerarySheet(plan, null);
+        const url = new URL(window.location.href);
+        url.searchParams.set('plan', requestId);
+        window.history.replaceState({}, '', url);
+    }
+
+    async function copyPlanSummary(plan) {
+        const advisorSteps = (plan.advisor?.nextSteps || []).map((step, index) => `${index + 1}. ${step}`).join('\n');
+        const summary = [
+            `${plan.destination} Trip Plan`,
+            `${plan.summary}`,
+            `Budget verdict: ${plan.feasibility}`,
+            `Estimated total: ${formatEstimate(plan.budget?.estimatedTripCost)}`,
+            `Travel window: ${plan.itinerary?.days?.[0]?.date || ''} ${plan.itinerary?.days?.length ? `for ${plan.itinerary.days.length} day(s)` : ''}`,
+            `Highlights: ${(plan.itinerary?.dayHighlights || []).slice(0, 3).join(' | ')}`,
+            advisorSteps ? `Next steps:\n${advisorSteps}` : '',
+            `Share link: ${window.location.origin}${window.location.pathname}?plan=${plan.requestId}`
+        ].filter(Boolean).join('\n\n');
+        await navigator.clipboard.writeText(summary);
+    }
+
+    async function copyShareLink(requestId) {
+        await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?plan=${requestId}`);
+    }
+
+    function renderBookingLinks(links) {
+        if (!links?.length) return '';
+        return `<div class="link-grid">${links.map(link => {
+            const enabled = link.enabled !== false;
+            if (!enabled) {
+                return `
+                    <span class="booking-link disabled" title="${escapeHtml(link.note || '')}">
+                        ${escapeHtml(link.label || link.provider || 'Open')}
+                    </span>
+                `;
+            }
+            return `
+                <a class="booking-link" href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(link.note || '')}">
+                    ${escapeHtml(link.label || link.provider || 'Open')} ↗
+                </a>
+            `;
+        }).join('')}</div>`;
+    }
+
+    function openItinerarySheet(plan, comparison) {
+        if (!plan) return;
+        const budget = plan.budget || {};
+        const flights = plan.flights || {};
+        const hotels = plan.hotels || {};
+        const weather = plan.weather || {};
+        const advisor = plan.advisor || {};
+        const itinerary = plan.itinerary || {};
+        const planning = plan.planningIntelligence || {};
+        const dayHighlights = itinerary.dayHighlights || [];
+        const days = itinerary.days || [];
+        const realPlaces = itinerary.realPlaces || [];
+        const allBookingLinks = [...(flights.bookingLinks || []), ...(hotels.bookingLinks || [])];
+
+        sheetTitle.textContent = `${plan.destination} Trip Plan`;
+        sheetSubtitle.textContent = `${plan.feasibility} budget fit · ${budget.confidence || 'estimated'} confidence · ${flights.route || 'route pending'}`;
+
+        sheetBody.innerHTML = `
+            <div class="sheet-overview">
+                <div class="overview-panel">
+                    <div class="overview-kicker">TripMind Verdict</div>
+                    <div class="overview-headline">${escapeHtml(plan.summary)}</div>
+                    <div class="overview-copy">${escapeHtml(compactNarrative(itinerary.aiNarrative, itinerary.preview || 'The itinerary builder prepared a practical trip structure from the available plan context.', 420))}</div>
+                    ${itinerary.budgetNarrative ? `<div class="tiny" style="margin-top:10px;">${escapeHtml(itinerary.budgetNarrative)}</div>` : ''}
+                </div>
+                <div class="overview-panel">
+                    <div class="overview-kicker">Budget Breakdown</div>
+                    <div class="overview-metrics">
+                        <div class="overview-metric"><strong>${formatMoney(budget.totalBudget)}</strong><span>Total Budget</span></div>
+                        <div class="overview-metric"><strong>${formatMoney(budget.planningTotal || budget.estimatedTripCost)}</strong><span>Planning Total</span></div>
+                        <div class="overview-metric"><strong>${formatMoney(budget.contingencyReserve)}</strong><span>Safety Buffer</span></div>
+                        <div class="overview-metric"><strong>${budget.pressureScore ?? 'n/a'}/100</strong><span>Pressure Score</span></div>
+                    </div>
+                    ${budgetSegments(budget)}
+                </div>
+            </div>
+
+            ${planning.tripArchetype ? `
+                <div class="overview-panel" style="margin-bottom:14px;">
+                    <div class="overview-kicker">Planning Intelligence</div>
+                    <div class="overview-copy">
+                        <strong>Trip type:</strong> ${escapeHtml(planning.tripArchetype)}<br>
+                        <strong>Planning mode:</strong> ${escapeHtml(planning.planningMode || 'Connected multi-agent planning')}<br>
+                        <strong>Booking readiness:</strong> ${escapeHtml(planning.bookingReadiness || 'Planning ready')}<br>
+                        <strong>Source reliability:</strong> ${escapeHtml(planning.sourceReliability || 'Hybrid planning')}<br>
+                        <strong>Live data coverage:</strong> ${escapeHtml(planning.liveDataCoverage || 'Estimate-led planning')}<br>
+                        <strong>Traveler profile:</strong> ${escapeHtml(planning.travelerProfile || 'Trip profile')}
+                    </div>
+                    ${(planning.groundingNotes || []).length ? `<ul class="clean" style="margin-top:10px;">${planning.groundingNotes.map(note => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+                </div>
+            ` : ''}
+
+            <div class="source-banner">
+                Planning note: prices are TripMind estimates until you open a booking partner. Flight and hotel buttons carry your trip context into live search pages. Weather source: ${escapeHtml(readableSource(weather.source, 'planning fallback'))}. Place source: ${escapeHtml(readableSource(itinerary.placeSource, 'template-backed place planning'))}.
+            </div>
+
+            ${realPlaces.length ? `
+                <div class="overview-panel" style="margin-bottom:14px;">
+                    <div class="overview-kicker">Real Places Used</div>
+                    <div class="overview-copy">${realPlaces.map(escapeHtml).join(' · ')}</div>
+                </div>
+            ` : ''}
+
+            <div class="overview-panel" style="margin-bottom:14px;">
+                <div class="overview-kicker">Travel Logistics</div>
+                <div class="overview-copy">
+                    <strong>Flights:</strong> ${escapeHtml(flights.route || 'Route pending')} · ${escapeHtml(flights.cabin || 'Economy')} · Estimated fare ${formatEstimate(flights.estimatedTotal)} · ${escapeHtml(readableEstimateLabel(flights.estimateType, 'market estimate'))}<br>
+                    ${flights.bookingPath ? `<strong>Flight note:</strong> ${escapeHtml(compactNarrative(flights.bookingPath, '', 220))}<br>` : ''}
+                    <strong>Hotels:</strong> ${escapeHtml(hotels.stayStyle || 'Stay plan')} · Estimated ${formatEstimate(hotels.estimatedNightly)} per night · ${hotels.nights || 0} nights · ${hotels.rooms || 1} room(s)<br>
+                    ${hotels.aiRecommendation ? `<strong>Hotel strategy:</strong> ${escapeHtml(compactNarrative(hotels.aiRecommendation, '', 360))}<br>` : ''}
+                    <strong>Weather:</strong> ${escapeHtml(weather.summary || 'Weather context pending')}
+                </div>
+                ${renderBookingLinks(allBookingLinks)}
+            </div>
+
+            ${(weather.travelTiming || (weather.packingList || []).length) ? `
+                <div class="overview-panel" style="margin-bottom:14px;">
+                    <div class="overview-kicker">Timing and Packing</div>
+                    <div class="overview-copy">${escapeHtml(weather.travelTiming || 'Travel timing note unavailable.')}</div>
+                    ${(weather.packingList || []).length ? `<ul class="clean" style="margin-top:10px;">${weather.packingList.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+                </div>
+            ` : ''}
+
+            <div class="overview-panel" style="margin-bottom:14px;">
+                <div class="overview-kicker">Trip Advisor</div>
+                <ul class="clean">${(advisor.recommendations || []).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+                ${advisor.proactiveTip ? `<div class="section-note"><strong>Save-money tip:</strong> ${escapeHtml(advisor.proactiveTip)}</div>` : ''}
+                ${advisor.visaNote ? `<div class="section-note"><strong>Visa note:</strong> ${escapeHtml(advisor.visaNote)}</div>` : ''}
+                ${advisor.delightNote ? `<div class="section-note"><strong>Extra insight:</strong> ${escapeHtml(advisor.delightNote)}</div>` : ''}
+                ${(advisor.nextSteps || []).length ? `<ul class="clean" style="margin-top:10px;">${advisor.nextSteps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ul>` : ''}
+            </div>
+
+            ${comparison ? `
+                <div class="overview-panel" style="margin-bottom:14px;">
+                    <div class="overview-kicker">Comparison</div>
+                    <div class="overview-copy">${escapeHtml(comparison.note)}</div>
+                    <div class="overview-metrics" style="margin-top:12px;">
+                        <div class="overview-metric"><strong>${escapeHtml(plan.destination)}</strong><span>Primary · ${escapeHtml(plan.feasibility)}</span></div>
+                        <div class="overview-metric"><strong>${escapeHtml(comparison.secondaryDestination)}</strong><span>Secondary · ${escapeHtml(comparison.secondaryPlan?.feasibility || 'n/a')}</span></div>
+                    </div>
+                </div>
+            ` : ''}
+
+            <div class="overview-kicker">Day-by-day itinerary</div>
+            ${renderDayBlocks(days, dayHighlights)}
+        `;
+
+        bindDayToggles(sheetBody);
+        itineraryOverlay.classList.add('open');
+    }
+
+    function renderAgentPipeline(stages) {
+        const defaultAgents = [
+            ['budget-agent', 'Budget Brain', 'Models feasibility and spend split'],
+            ['flight-agent', 'Flight Scout', 'Prepares route and price estimate'],
+            ['hotel-agent', 'Hotel Scout', 'Shapes stay strategy'],
+            ['weather-agent', 'Weather Lens', 'Adds season and weather context'],
+            ['trip-advisor-agent', 'Trip Advisor', 'Adds verdict and alternatives'],
+            ['itinerary-agent', 'Itinerary Builder', 'Builds the trip structure']
+        ];
+
+        if (!stages.length) {
+            agentList.innerHTML = defaultAgents.map(([id, name, summary]) => `
+                <div class="agent-row waiting">
+                    <div class="agent-icon">${agentIcon(id)}</div>
+                    <div>
+                        <div class="agent-name">${name}</div>
+                        <div class="agent-status">${summary}</div>
+                    </div>
+                    <div class="agent-indicator"></div>
+                </div>
+            `).join('');
+            return;
+        }
+
+        agentList.innerHTML = stages.map(stage => `
+            <div class="agent-row ${stage.degraded || stage.status === 'degraded' ? 'degraded' : stage.status === 'completed' ? 'done' : 'running'}">
+                <div class="agent-icon">${agentIcon(stage.agent)}</div>
+                <div>
+                    <div class="agent-name">${agentDisplayName(stage.agent)}${stage.durationMs ? ` · ${stage.durationMs}ms` : ''}</div>
+                    <div class="agent-status">${escapeHtml(stage.capability || '')}${stage.capability ? ' · ' : ''}${escapeHtml(stage.summary || '')}</div>
+                </div>
+                <div class="agent-indicator"></div>
+            </div>
+        `).join('');
+    }
+
+    function agentDisplayName(agent) {
+        const names = {
+            'budget-agent': 'Budget Brain',
+            'flight-agent': 'Flight Scout',
+            'hotel-agent': 'Hotel Scout',
+            'weather-agent': 'Weather Lens',
+            'trip-advisor-agent': 'Trip Advisor',
+            'itinerary-agent': 'Itinerary Builder'
+        };
+        return names[agent] || agent;
+    }
+
+    function agentIcon(agent) {
+        if (agent.includes('budget')) return '₹';
+        if (agent.includes('flight')) return '✈';
+        if (agent.includes('hotel')) return '⌂';
+        if (agent.includes('weather')) return '☁';
+        if (agent.includes('advisor')) return '✦';
+        if (agent.includes('itinerary')) return '▦';
+        return '•';
+    }
+
+    function resetSession() {
+        state.sessionId = null;
+        state.latestRequestId = null;
+        state.latestPlan = null;
+        state.latestComparison = null;
+        state.lastAutoOpenedRequestId = null;
+        state.planHistory = [];
+        topStatus.textContent = 'All agents online';
+        planningBadge.textContent = 'Session inactive';
+        wsDestination.textContent = 'Not set';
+        wsDates.textContent = 'Not set';
+        wsBudget.textContent = 'Not set';
+        wsState.textContent = 'Collecting details';
+        messagesEl.innerHTML = `<div class="message bot-message">New session started. Tell TripMind about the next trip you want to plan, and I’ll check feasibility before building the itinerary.</div>`;
+        snapshotGrid.innerHTML = '';
+        missingZone.innerHTML = `<div class="empty-state">Trip fields will appear here as the chat fills them in.</div>`;
+        planZone.innerHTML = `<div class="empty-state">Once enough details are captured, the agent output appears here: budget verdict, booking paths, risks, and a day-by-day itinerary.</div>`;
+        historyList.innerHTML = `<div class="empty-state">Generated plans will appear here once you create them.</div>`;
+        renderAgentPipeline([]);
+        updatePlanActions();
+    }
+
+    async function loadPlanFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const requestId = params.get('plan');
+        if (requestId) {
+            await loadPlanById(requestId);
+        }
+    }
+
+    renderAgentPipeline([]);
+    updatePlanActions();
+    loadPlanFromUrl();
+</script>
+</body>
+</html>

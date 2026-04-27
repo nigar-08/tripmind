@@ -1,0 +1,13 @@
+target
+.git
+.gitignore
+.idea
+.mvn/wrapper/maven-wrapper.jar
+data
+docker-data
+*.log
+.env
+.env.*
+!.env.example
+HELP.md
+mvn-debug.log
