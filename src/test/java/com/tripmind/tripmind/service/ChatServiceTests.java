@@ -5,7 +5,14 @@ import com.tripmind.tripmind.dto.ChatResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +21,17 @@ import static org.assertj.core.api.Assertions.assertThat;
         "tripmind.ai.provider=rule_based",
         "tripmind.places.provider=disabled"
 })
+@Import(ChatServiceTests.FixedClockConfig.class)
 class ChatServiceTests {
+
+    @TestConfiguration
+    static class FixedClockConfig {
+        @Bean
+        @Primary
+        Clock fixedClock() {
+            return Clock.fixed(Instant.parse("2026-01-15T00:00:00Z"), ZoneOffset.UTC);
+        }
+    }
 
     @Autowired
     private ChatService chatService;
@@ -301,6 +318,30 @@ class ChatServiceTests {
                 .containsEntry("origin", "Mumbai")
                 .containsEntry("departureDate", "2026-05-02")
                 .containsEntry("returnDate", "2026-05-06");
+    }
+
+    @Test
+    void originMessageDoesNotOverwriteDestinationAndExplicitDestinationCorrectionWins() {
+        String sessionId = UUID.randomUUID().toString();
+
+        chatService.handleChat(new ChatRequest(sessionId, "plan me a trip for ireland"));
+        chatService.handleChat(new ChatRequest(sessionId, "i am from mumbai we are 3 traveler and our budget is 450000"));
+        chatService.handleChat(new ChatRequest(sessionId, "round trip"));
+        chatService.handleChat(new ChatRequest(sessionId, "for the group"));
+        ChatResponse datesReply = chatService.handleChat(new ChatRequest(sessionId, "from mumbai from 5 to 10 may"));
+        ChatResponse destinationCorrection = chatService.handleChat(new ChatRequest(sessionId, "destination is ireland"));
+        ChatResponse readyReply = chatService.handleChat(new ChatRequest(sessionId, "yes"));
+
+        assertThat(datesReply.tripSnapshot())
+                .containsEntry("origin", "Mumbai")
+                .containsEntry("destination", "Ireland");
+        assertThat(destinationCorrection.tripSnapshot())
+                .containsEntry("origin", "Mumbai")
+                .containsEntry("destination", "Ireland");
+        assertThat(readyReply.tripSnapshot())
+                .containsEntry("origin", "Mumbai")
+                .containsEntry("destination", "Ireland");
+        assertThat(readyReply.response()).contains("Mumbai to Ireland");
     }
 
     @Test

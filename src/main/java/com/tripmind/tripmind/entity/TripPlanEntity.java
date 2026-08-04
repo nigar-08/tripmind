@@ -5,13 +5,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
 
 @Entity
-@Table(name = "trip_plans")
+@Table(name = "trip_plans", indexes = {
+        @Index(name = "idx_trip_plan_session_created", columnList = "sessionKey,createdAt"),
+        @Index(name = "idx_trip_plan_created", columnList = "createdAt")
+})
 public class TripPlanEntity {
 
     @Id

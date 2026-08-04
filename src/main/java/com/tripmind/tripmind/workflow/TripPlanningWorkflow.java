@@ -19,6 +19,7 @@ import com.tripmind.tripmind.service.agent.WeatherAgentService;
 import com.tripmind.tripmind.service.AgentTaskBus;
 import com.tripmind.tripmind.service.DestinationArchetypeService;
 import com.tripmind.tripmind.service.WorkflowEventPublisher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Component
 public class TripPlanningWorkflow {
@@ -40,6 +42,7 @@ public class TripPlanningWorkflow {
     private final WorkflowEventPublisher workflowEventPublisher;
     private final AgentTaskBus agentTaskBus;
     private final DestinationArchetypeService destinationArchetypeService;
+    private final Executor tripPlanningExecutor;
 
     public TripPlanningWorkflow(
             BudgetAgentService budgetAgentService,
@@ -50,7 +53,8 @@ public class TripPlanningWorkflow {
             ItineraryAgentService itineraryAgentService,
             WorkflowEventPublisher workflowEventPublisher,
             AgentTaskBus agentTaskBus,
-            DestinationArchetypeService destinationArchetypeService
+            DestinationArchetypeService destinationArchetypeService,
+            @Qualifier("tripPlanningExecutor") Executor tripPlanningExecutor
     ) {
         this.budgetAgentService = budgetAgentService;
         this.flightAgentService = flightAgentService;
@@ -61,6 +65,7 @@ public class TripPlanningWorkflow {
         this.workflowEventPublisher = workflowEventPublisher;
         this.agentTaskBus = agentTaskBus;
         this.destinationArchetypeService = destinationArchetypeService;
+        this.tripPlanningExecutor = tripPlanningExecutor;
     }
 
     public PlanningSnapshot execute(TripRequest request) {
@@ -88,7 +93,7 @@ public class TripPlanningWorkflow {
                                     "source", output.source()
                             )
                     );
-                })
+                }, tripPlanningExecutor)
                 .completeOnTimeout(flightAgentService.fallback(request, budgetPlan, "agent timeout"), 4, java.util.concurrent.TimeUnit.SECONDS)
                 .exceptionally(error -> flightAgentService.fallback(request, budgetPlan, shortReason(error)));
         CompletableFuture<WeatherAgentService.WeatherOutput> weatherFuture =
@@ -105,7 +110,7 @@ public class TripPlanningWorkflow {
                                     "source", output.source()
                             )
                     );
-                })
+                }, tripPlanningExecutor)
                 .completeOnTimeout(weatherAgentService.fallback(request, "agent timeout"), 4, java.util.concurrent.TimeUnit.SECONDS)
                 .exceptionally(error -> weatherAgentService.fallback(request, shortReason(error)));
 
@@ -129,7 +134,7 @@ public class TripPlanningWorkflow {
                                     "source", output.source()
                             )
                     );
-                })
+                }, tripPlanningExecutor)
                 .completeOnTimeout(hotelAgentService.fallback(request, budgetPlan, flightOutput.estimatedTotal(), "agent timeout"), 4, java.util.concurrent.TimeUnit.SECONDS)
                 .exceptionally(error -> hotelAgentService.fallback(request, budgetPlan, flightOutput.estimatedTotal(), shortReason(error)));
 
@@ -249,12 +254,12 @@ public class TripPlanningWorkflow {
                 CompletableFuture.supplyAsync(() -> {
                     workflowEventPublisher.agentStarted(request, "trip-advisor-agent", "Adding feasibility verdict and alternatives.");
                     return tripAdvisorAgentService.advise(request, budgetPlan);
-                });
+                }, tripPlanningExecutor);
         CompletableFuture<ItineraryAgentService.ItineraryOutput> itineraryFuture =
                 CompletableFuture.supplyAsync(() -> {
                     workflowEventPublisher.agentStarted(request, "itinerary-agent", "Building itinerary preview.");
                     return itineraryAgentService.build(request, budgetPlan, flightOutput, hotelOutput, weatherOutput);
-                });
+                }, tripPlanningExecutor);
 
         TripAdvisorAgentService.AdvisorOutput advisorOutput = advisorFuture.join();
         ItineraryAgentService.ItineraryOutput itineraryOutput = itineraryFuture.join();

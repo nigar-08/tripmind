@@ -1,5 +1,7 @@
 package com.tripmind.tripmind.service;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.tripmind.tripmind.dto.FeedbackRequest;
 import com.tripmind.tripmind.dto.TripPlanResponse;
 import com.tripmind.tripmind.dto.TripPlanSummaryView;
@@ -12,12 +14,7 @@ import com.tripmind.tripmind.repository.TripPlanRepository;
 import com.tripmind.tripmind.repository.TripSessionRepository;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,15 +24,18 @@ public class PlanPersistenceService {
     private final TripPlanRepository tripPlanRepository;
     private final TripSessionRepository tripSessionRepository;
     private final FeedbackRepository feedbackRepository;
+    private final ObjectMapper objectMapper;
 
     public PlanPersistenceService(
             TripPlanRepository tripPlanRepository,
             TripSessionRepository tripSessionRepository,
-            FeedbackRepository feedbackRepository
+            FeedbackRepository feedbackRepository,
+            ObjectMapper objectMapper
     ) {
         this.tripPlanRepository = tripPlanRepository;
         this.tripSessionRepository = tripSessionRepository;
         this.feedbackRepository = feedbackRepository;
+        this.objectMapper = objectMapper;
     }
 
     public void savePlan(TripRequest request, TripPlanResponse response) {
@@ -206,23 +206,16 @@ public class PlanPersistenceService {
 
     private String serialize(Object value) {
         try {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            try (ObjectOutputStream output = new ObjectOutputStream(bytes)) {
-                output.writeObject(value);
-            }
-            return Base64.getEncoder().encodeToString(bytes.toByteArray());
-        } catch (Exception exception) {
+            return objectMapper.writeValueAsString(value);
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Could not serialize persisted plan payload", exception);
         }
     }
 
     private Optional<TripPlanResponse> deserialize(String json) {
         try {
-            byte[] data = Base64.getDecoder().decode(json);
-            try (ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(data))) {
-                return Optional.of((TripPlanResponse) input.readObject());
-            }
-        } catch (Exception exception) {
+            return Optional.of(objectMapper.readValue(json, TripPlanResponse.class));
+        } catch (JacksonException exception) {
             return Optional.empty();
         }
     }

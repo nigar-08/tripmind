@@ -12,6 +12,8 @@ TripMind is a Spring Boot travel planning project that turns a chat-style trip r
 - Weather context, packing guidance, and advisor notes
 - Day-by-day itinerary generation
 - Fallback handling when live or provider data is weak
+- Bounded parallel agent execution with timeouts and graceful degradation
+- Portable JSON plan persistence and indexed session history
 
 ## Tech Stack
 
@@ -56,7 +58,7 @@ cp .env.example .env
 
 3. Open:
 
-- App: `http://127.0.0.1:8082`
+- App: `http://127.0.0.1:8080`
 - H2 console: `http://127.0.0.1:8080/h2-console`
 
 ## Run With Docker
@@ -114,6 +116,17 @@ To run the test suite:
 ```bash
 ./mvnw test
 ```
+
+Tests use an isolated in-memory H2 database and disable optional Redis/provider integrations, so they do not require local infrastructure or API keys. GitHub Actions runs `./mvnw verify` on every pull request and push to `main`.
+
+## Reliability Design
+
+- Flight, hotel, weather, advisor, and itinerary work runs on a bounded application executor instead of the JVM common pool.
+- Agent and provider failures degrade to explicit estimate-led results rather than failing the entire plan.
+- External HTTP calls use configurable connect and read timeouts.
+- Redis workflow tracing is optional; planning continues when Redis is unavailable.
+- Plans are stored as JSON rather than Java-native serialized objects, keeping persisted payloads portable and inspectable.
+- Database indexes support request lookup, session history, recent-plan ordering, and feedback lookup.
 
 ## Deployment
 
