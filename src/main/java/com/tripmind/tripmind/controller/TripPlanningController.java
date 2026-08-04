@@ -63,7 +63,7 @@ public class TripPlanningController {
     @PostMapping("/{requestId}/replan")
     public ResponseEntity<TripPlanResponse> replanTrip(
             @PathVariable String requestId,
-            @RequestBody ReplanRequest request
+            @Valid @RequestBody ReplanRequest request
     ) {
         TripPlanEntity existingPlan = planPersistenceService.findPlan(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip plan not found"));

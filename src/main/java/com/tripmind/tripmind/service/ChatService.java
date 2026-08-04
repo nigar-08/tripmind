@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.Year;
@@ -43,7 +44,8 @@ public class ChatService {
     private static final Pattern PLAIN_BUDGET_REPLY_PATTERN = Pattern.compile("(?i)^(?:it'?s|its|it is|budget|budget is|total|total budget|total is|around|about)?\\s*([$€₹]|usd|eur|aed|inr|rs\\.?)?\\s*([\\d,]{3,}(?:\\.\\d+)?)\\s*(lakh|lakhs|l)?(?:\\s*(per person|each))?\\s*$");
     private static final Pattern BUDGET_AFTER_AMOUNT_PATTERN = Pattern.compile("(?i)(?:budget|under|around|cost|spend|total)?\\s*(?:is|of|about|approx(?:imately)?)?\\s*([\\d,]+(?:\\.\\d+)?)\\s*(lakh|lakhs|l)?\\s*(usd|eur|aed|inr|rs\\.?)\\s*(per person|each)?");
     private static final Pattern ORIGIN_PATTERN = Pattern.compile("(?i)(?:i live in|i am from|i'm from|from|leaving from|starting from|based in)\\s+([a-zA-Z ]{2,40}?)(?=\\s+to\\b|\\s+and\\b|\\s+with\\b|\\s+for\\b|\\s+from\\s+\\d|['\".,]|$)");
-    private static final Pattern DESTINATION_PATTERN = Pattern.compile("(?i)(?:want\\s+(?:to\\s+)?go\\s+(?:to\\s+)?|wanna\\s+go\\s+(?:to\\s+)?|go\\s+(?:to\\s+)?|visit\\s+|travel\\s+to\\s+|trip\\s+to\\s+|planning\\s+for\\s+|plan(?:\\s+a)?(?:\\s+trip)?(?:\\s+to)?\\s+|build(?:\\s+a)?(?:\\s+trip)?(?:\\s+to)?\\s+|book(?:\\s+a)?(?:\\s+trip)?(?:\\s+to)?\\s+)([a-zA-Z ]{2,40}?)(?=\\s+from\\b|\\s+and\\b|\\s+with\\b|\\s+for\\b|\\s+on\\b|\\s+between\\b|\\s+we\\s+are\\b|\\s+we're\\b|\\s+our\\s+budget\\b|\\s+budget\\b|\\s+from\\s+\\d|[,.]|$)");
+    private static final Pattern DESTINATION_PATTERN = Pattern.compile("(?i)(?:want\\s+(?:to\\s+)?go\\s+(?:to\\s+)?|wanna\\s+go\\s+(?:to\\s+)?|go\\s+(?:to\\s+)?|visit\\s+|travel\\s+to\\s+|trip\\s+to\\s+|planning\\s+for\\s+|plan(?:\\s+me)?(?:\\s+a)?(?:\\s+trip)?(?:\\s+(?:to|for))?\\s+|build(?:\\s+a)?(?:\\s+trip)?(?:\\s+to)?\\s+|book(?:\\s+a)?(?:\\s+trip)?(?:\\s+to)?\\s+)([a-zA-Z ]{2,40}?)(?=\\s+from\\b|\\s+and\\b|\\s+with\\b|\\s+for\\b|\\s+on\\b|\\s+between\\b|\\s+we\\s+are\\b|\\s+we're\\b|\\s+our\\s+budget\\b|\\s+budget\\b|\\s+from\\s+\\d|[,.]|$)");
+    private static final Pattern DESTINATION_ASSIGNMENT_PATTERN = Pattern.compile("(?i)(?:destination|going\\s+to|trip\\s+is\\s+to)\\s*(?:is|=|to)?\\s+([a-zA-Z ]{2,40}?)(?=\\s+from\\b|\\s+and\\b|\\s+with\\b|\\s+for\\b|\\s+on\\b|\\s+between\\b|[,.]|$)");
     private static final Pattern DESTINATION_CHANGE_PATTERN = Pattern.compile("(?i)(?:change|switch|update)\\s+(?:destination|trip|place)?\\s*(?:to)?\\s+([a-zA-Z ]{2,40}?)(?=\\s+and\\b|\\s+with\\b|\\s+for\\b|[,.]|$)");
     private static final Pattern COMPARE_PATTERN = Pattern.compile("(?i)(?:compare|comparison(?:\\s+between)?)\\s+([a-zA-Z ]{2,30}?)\\s+(?:and|vs|versus)\\s+([a-zA-Z ]{2,30}?)(?=\\s+for\\b|\\s+with\\b|[,.]|$)");
     private static final Pattern SINGLE_WORD_PLACE_PATTERN = Pattern.compile("(?i)^['\"]?([a-zA-Z]{3,30}(?:\\s+[a-zA-Z]{3,30})?)['\"]?$");
@@ -64,7 +66,7 @@ public class ChatService {
             "Manali", "Leh", "Switzerland", "Kochi", "Thailand", "Vietnam", "Nepal",
             "Beijing", "Shanghai", "Guangzhou", "Shenzhen", "Chengdu", "Rome", "Milan", "Venice",
             "Florence", "Zurich", "Lucerne", "Interlaken", "Kathmandu", "Pokhara", "Ho Chi Minh City",
-            "Hanoi", "Chiang Mai", "New Zealand", "Auckland", "Wellington", "Queenstown", "France",
+            "Hanoi", "Chiang Mai", "New Zealand", "Auckland", "Wellington", "Queenstown", "France", "Ireland",
             "Paris", "Nice", "Lyon", "Strasbourg", "Bora Bora"
     );
     private static final Map<String, List<String>> BROAD_DESTINATION_SUGGESTIONS = Map.of(
@@ -87,15 +89,18 @@ public class ChatService {
     private final PlanPersistenceService planPersistenceService;
     private final TripPlanningFacade tripPlanningFacade;
     private final AiProviderService aiProviderService;
+    private final Clock clock;
 
     public ChatService(
             PlanPersistenceService planPersistenceService,
             TripPlanningFacade tripPlanningFacade,
-            AiProviderService aiProviderService
+            AiProviderService aiProviderService,
+            Clock clock
     ) {
         this.planPersistenceService = planPersistenceService;
         this.tripPlanningFacade = tripPlanningFacade;
         this.aiProviderService = aiProviderService;
+        this.clock = clock;
     }
 
     public ChatResponse handleChat(ChatRequest request) {
@@ -112,7 +117,7 @@ public class ChatService {
             extractVibe(session, normalizedMessage);
             rememberExploratoryTopic(session, request.message());
             session.setConversationState("chatting");
-            session.setUpdatedAt(Instant.now());
+            session.setUpdatedAt(Instant.now(clock));
             planPersistenceService.saveSession(session);
             List<String> missing = missingFields(session);
             return new ChatResponse(
@@ -147,7 +152,7 @@ public class ChatService {
                 ? null
                 : planPersistenceService.findPlanResponse(before.requestId()).orElse(null);
         mergeMessageIntoSession(session, request.message());
-        session.setUpdatedAt(Instant.now());
+        session.setUpdatedAt(Instant.now(clock));
 
         List<String> missingFields = missingFields(session);
         boolean readyToPlan = missingFields.isEmpty();
@@ -642,6 +647,14 @@ public class ChatService {
                 || lower.contains("one-way");
     }
 
+    private boolean hasExplicitDestinationAssignment(String message) {
+        String lower = message.toLowerCase(Locale.ENGLISH);
+        return DESTINATION_PATTERN.matcher(message).find()
+                || DESTINATION_ASSIGNMENT_PATTERN.matcher(message).find()
+                || lower.contains("destination")
+                || lower.contains("going to");
+    }
+
     private TripRequest toTripRequest(TripSessionEntity session) {
         return new TripRequest(
                 UUID.randomUUID().toString(),
@@ -683,7 +696,7 @@ public class ChatService {
             clearExploratoryTopic(session);
         }
         String directDestinationMention = extractLikelyDestinationMention(rawMessage);
-        if (directDestinationMention != null && hasPlanningSetupIntent(message) && !isVagueDestinationPhrase(message)) {
+        if (directDestinationMention != null && hasExplicitDestinationAssignment(message) && !isVagueDestinationPhrase(message)) {
             applyDestinationCandidate(session, directDestinationMention);
         }
 
@@ -846,8 +859,13 @@ public class ChatService {
             applyDestinationCandidate(session, cleanPlace(matcher.group(1)));
             return;
         }
+        Matcher explicitAssignmentMatcher = DESTINATION_ASSIGNMENT_PATTERN.matcher(message);
+        if (explicitAssignmentMatcher.find()) {
+            applyDestinationCandidate(session, cleanPlace(explicitAssignmentMatcher.group(1)));
+            return;
+        }
         String likelyMention = extractLikelyDestinationMention(message);
-        if (likelyMention != null && hasPlanningSetupIntent(message) && !isVagueDestinationPhrase(message)) {
+        if (likelyMention != null && hasExplicitDestinationAssignment(message) && !isVagueDestinationPhrase(message)) {
             applyDestinationCandidate(session, likelyMention);
         }
     }
@@ -1090,7 +1108,7 @@ public class ChatService {
             int endDay = Integer.parseInt(twoMonthRangeMatcher.group(3));
             Month endMonth = monthFrom(twoMonthRangeMatcher.group(4));
             if (startMonth != null && endMonth != null) {
-                int startYear = Year.now().getValue();
+                int startYear = Year.now(clock).getValue();
                 int endYear = endMonth.getValue() < startMonth.getValue() ? startYear + 1 : startYear;
                 session.setDepartureDate(String.format("%d-%02d-%02d", startYear, startMonth.getValue(), startDay));
                 session.setReturnDate(String.format("%d-%02d-%02d", endYear, endMonth.getValue(), endDay));
@@ -1105,9 +1123,9 @@ public class ChatService {
             int endDay = Integer.parseInt(rangeMatcher.group(2));
             Month month = monthFrom(rangeMatcher.group(3));
             if (month != null) {
-                int year = Year.now().getValue();
+                int year = Year.now(clock).getValue();
                 LocalDate start = LocalDate.of(year, month, startDay);
-                if (start.isBefore(LocalDate.now().minusDays(1))) {
+                if (start.isBefore(LocalDate.now(clock).minusDays(1))) {
                     year += 1;
                 }
                 session.setDepartureDate(String.format("%d-%02d-%02d", year, month.getValue(), startDay));
