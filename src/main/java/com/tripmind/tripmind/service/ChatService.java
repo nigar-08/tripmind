@@ -9,6 +9,7 @@ import com.tripmind.tripmind.dto.TripRiskView;
 import com.tripmind.tripmind.entity.TripSessionEntity;
 import com.tripmind.tripmind.model.TripRequest;
 import com.tripmind.tripmind.service.ai.AiProviderService;
+import com.tripmind.tripmind.service.ai.TripUnderstandingService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -90,17 +91,20 @@ public class ChatService {
     private final TripPlanningFacade tripPlanningFacade;
     private final AiProviderService aiProviderService;
     private final Clock clock;
+    private final TripUnderstandingService tripUnderstanding;
 
     public ChatService(
             PlanPersistenceService planPersistenceService,
             TripPlanningFacade tripPlanningFacade,
             AiProviderService aiProviderService,
-            Clock clock
+            Clock clock,
+            TripUnderstandingService tripUnderstanding
     ) {
         this.planPersistenceService = planPersistenceService;
         this.tripPlanningFacade = tripPlanningFacade;
         this.aiProviderService = aiProviderService;
         this.clock = clock;
+        this.tripUnderstanding = tripUnderstanding;
     }
 
     public ChatResponse handleChat(ChatRequest request) {
@@ -714,6 +718,28 @@ public class ChatService {
         extractSpecialRequest(session, rawMessage);
         inferStandaloneLocation(session, message);
 
+        // AI supplements the existing parser; confirmed session values remain authoritative.
+        tripUnderstanding.extract(rawMessage, snapshotMap(session)).ifPresent(fields -> {
+            if (session.getOrigin() == null && fields.origin() != null) session.setOrigin(fields.origin());
+            if (!hasConcreteDestination(session) && fields.destination() != null) applyDestinationCandidate(session, fields.destination());
+            if (session.getTravelers() == null && fields.travelers() != null) session.setTravelers(fields.travelers());
+            if (session.getBudget() == null && fields.budget() != null) {
+                session.setBudget(fields.budget());
+                session.setBudgetCurrency(fields.budgetCurrency());
+            }
+            if (session.getBudgetCurrency() == null && fields.budgetCurrency() != null) session.setBudgetCurrency(fields.budgetCurrency());
+            if (session.getBudgetScope() == null && fields.budgetScope() != null) session.setBudgetScope(fields.budgetScope());
+            if (session.getTripType() == null && fields.tripType() != null) session.setTripType(fields.tripType());
+            if (session.getDepartureDate() == null && fields.departureDate() != null) session.setDepartureDate(fields.departureDate());
+            if (session.getReturnDate() == null && fields.returnDate() != null) session.setReturnDate(fields.returnDate());
+            if (session.getVibe() == null && fields.vibe() != null) session.setVibe(fields.vibe());
+            if (session.getSpecialRequest() == null && fields.specialRequest() != null) session.setSpecialRequest(fields.specialRequest());
+            if (session.getTravelerNeeds() == null && fields.travelerNeeds() != null) session.setTravelerNeeds(fields.travelerNeeds());
+        });
+        if (session.getPendingClarificationCode() != null && canClearPendingFromCurrentState(session)) {
+            clearPendingClarification(session);
+        }
+
         if (session.getPendingClarificationCode() == null
                 && hasConcreteDestination(session)
                 && session.getTripType() == null) {
@@ -1041,11 +1067,7 @@ public class ChatService {
             return;
         }
         if (lower.contains("cheaper") && session.getBudget() != null) {
-            session.setBudget((int) Math.max(1000, Math.round(session.getBudget() * 0.9)));
-            return;
-        }
-        if ((lower.contains("more luxury") || lower.contains("luxury hotel")) && session.getBudget() != null) {
-            session.setBudget((int) Math.round(session.getBudget() * 1.15));
+            session.setVibe("budget");
         }
     }
 
@@ -1055,7 +1077,7 @@ public class ChatService {
         session.setBudget(normalizedAmount);
         session.setBudgetCurrency(currency);
         if (scopeToken != null && !scopeToken.isBlank()) {
-            session.setBudgetScope("per_person");
+            session.setBudgetScope("total".equalsIgnoreCase(scopeToken) ? "total" : "per_person");
             clearPendingClarificationIf(session, "BUDGET_SCOPE");
         } else if (session.getTravelers() != null && session.getTravelers() > 1) {
             session.setBudgetScope(null);
@@ -1161,7 +1183,8 @@ public class ChatService {
         }
         if (lower.contains("luxury") || lower.contains("5 star") || lower.contains("5-star")) {
             session.setVibe("luxury");
-        } else if (lower.contains("budget")) {
+        } else if (lower.contains("budget travel") || lower.contains("budget stay") || lower.contains("budget hotel")
+                || lower.contains("budget trip") || lower.contains("low budget") || lower.contains("on a budget")) {
             session.setVibe("budget");
         } else if (lower.contains("romantic") || lower.contains("honeymoon")) {
             session.setVibe("romantic");

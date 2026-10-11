@@ -2016,10 +2016,97 @@
             `;
         }
 
+        html += `
+            <div class="comparison-card">
+                <div class="mini-label">TripMind plan assistant</div>
+                <h3>Explore how to make this trip work</h3>
+                <div class="muted">Ask about the budget, weather or tradeoffs. Compare calculated revisions before applying one.</div>
+                <form id="copilotForm" class="secondary-action-row" style="margin-top:14px;">
+                    <input id="copilotInput" aria-label="Question about this plan" maxlength="2000" required
+                        placeholder="How can I reduce this trip's cost?" style="flex:1;min-width:180px;padding:12px;border-radius:10px;">
+                    <button class="secondary-action" id="copilotAskBtn" type="submit">Explore options</button>
+                </form>
+                <div id="copilotResult" aria-live="polite" style="margin-top:14px;"></div>
+            </div>`;
         planZone.innerHTML = html;
+        document.getElementById('copilotForm')?.addEventListener('submit', event => {
+            event.preventDefault();
+            askPlanCopilot(plan.requestId);
+        });
         document.getElementById('openSheetBtn')?.addEventListener('click', () => openItinerarySheet(plan, comparison));
         document.getElementById('copyPlanBtn')?.addEventListener('click', () => copyPlanSummary(plan));
         document.getElementById('sharePlanBtn')?.addEventListener('click', () => copyShareLink(plan.requestId));
+    }
+
+    async function askPlanCopilot(requestId) {
+        const input = document.getElementById('copilotInput');
+        const result = document.getElementById('copilotResult');
+        const button = document.getElementById('copilotAskBtn');
+        if (!input.value.trim()) return;
+        button.disabled = true;
+        result.textContent = 'Checking your plan and calculating alternatives…';
+        try {
+            const response = await fetch(`/api/v1/trips/${encodeURIComponent(requestId)}/copilot`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input.value.trim() })
+            });
+            if (!response.ok) throw new Error('The plan assistant could not answer. Please try again.');
+            const payload = await response.json();
+            if (!result.isConnected) return;
+            const mode = payload.mode === 'spring_ai' ? 'AI explanation' : 'Calculated comparison · AI unavailable';
+            result.innerHTML = `
+                <div class="mini-label">${mode}</div>
+                <div class="muted" style="white-space:pre-wrap;margin-top:8px;">${escapeHtml(payload.answer)}</div>
+                <div class="comparison-grid" style="margin-top:12px;">
+                    ${(payload.scenarios || []).map(scenario => `
+                        <div class="compare-box">
+                            <h3>${escapeHtml(scenario.label)}</h3>
+                            <div class="tiny">Planning total ${formatMoney(scenario.planningTotal)} · ${escapeHtml(scenario.feasibility)}</div>
+                            <div class="tiny">Estimated savings ${formatMoney(scenario.estimatedSavings)}</div>
+                            <div class="muted">${escapeHtml(scenario.tradeoff)}</div>
+                            <button class="secondary-action" data-apply-scenario="${escapeHtml(scenario.id)}" style="margin-top:10px;">Apply this revision</button>
+                        </div>`).join('')}
+                </div>
+                <details style="margin-top:12px;">
+                    <summary>Evidence and calculations used</summary>
+                    <div class="tiny" style="margin-top:8px;">Executed tools: ${(payload.toolsUsed || []).map(escapeHtml).join(' → ')}</div>
+                    ${(payload.evidence || []).map(item => `<div class="section-note"><strong>[${escapeHtml(item.id)}] ${escapeHtml(item.title)}</strong><br>${escapeHtml(item.content)}<br><span class="tiny">${/^https:\/\//.test(item.source || '') ? `<a href="${escapeHtml(item.source)}" target="_blank" rel="noopener noreferrer">View source</a>` : escapeHtml(item.source)}</span></div>`).join('')}
+                </details>`;
+            result.querySelectorAll('[data-apply-scenario]').forEach(applyButton => {
+                applyButton.addEventListener('click', async () => {
+                    const applyButtons = result.querySelectorAll('[data-apply-scenario]');
+                    applyButtons.forEach(item => item.disabled = true);
+                    applyButton.textContent = 'Creating revised plan…';
+                    try {
+                        const revisedResponse = await fetch(`/api/v1/trips/${encodeURIComponent(requestId)}/scenarios/${encodeURIComponent(applyButton.dataset.applyScenario)}/apply`, { method: 'POST' });
+                        if (!revisedResponse.ok) throw new Error('Could not apply the revision. Try again.');
+                        const revised = await revisedResponse.json();
+                        if (!result.isConnected) return;
+                        state.latestRequestId = revised.requestId;
+                        state.latestPlan = revised;
+                        state.latestComparison = null;
+                        renderPlan(revised, null, { tripSnapshot: {} });
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('plan', revised.requestId);
+                        window.history.replaceState({}, '', url);
+                        if (state.sessionId) {
+                            const historyResponse = await fetch(`/api/v1/trips/session/${encodeURIComponent(state.sessionId)}/history`);
+                            if (historyResponse.ok) {
+                                state.planHistory = await historyResponse.json();
+                                renderPlanHistory(state.planHistory);
+                            }
+                        }
+                    } catch (error) {
+                        applyButton.textContent = error.message;
+                        applyButtons.forEach(item => item.disabled = false);
+                    }
+                });
+            });
+        } catch (error) {
+            result.textContent = error.message;
+        } finally {
+            button.disabled = false;
+        }
     }
 
     function renderPlanHistory(history = []) {

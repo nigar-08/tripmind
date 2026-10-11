@@ -34,7 +34,7 @@ public class HybridAiProviderService implements AiProviderService {
             @Value("${tripmind.ai.openrouter.api-key:${OPENROUTER_API_KEY:}}") String openRouterApiKey,
             @Value("${tripmind.ai.openrouter.model:openrouter/free}") String openRouterModel,
             @Value("${tripmind.ai.groq.api-key:${GROQ_API_KEY:}}") String groqApiKey,
-            @Value("${tripmind.ai.groq.model:llama-3.3-70b-versatile}") String groqModel
+            @Value("${tripmind.ai.groq.model:qwen/qwen3.8-27b}") String groqModel
     ) {
         this.restClient = restClientBuilder.build();
         this.provider = provider;

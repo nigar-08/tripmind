@@ -1,6 +1,9 @@
 package com.tripmind.tripmind.controller;
 
 import com.tripmind.tripmind.dto.ChatRequest;
+import com.tripmind.tripmind.dto.CopilotRequest;
+import com.tripmind.tripmind.dto.CopilotResponse;
+import com.tripmind.tripmind.service.ai.PlanCopilotService;
 import com.tripmind.tripmind.dto.ChatResponse;
 import com.tripmind.tripmind.dto.FeedbackRequest;
 import com.tripmind.tripmind.dto.ReplanRequest;
@@ -32,22 +35,35 @@ public class TripPlanningController {
     private final PlanPersistenceService planPersistenceService;
     private final ChatService chatService;
     private final RedisTraceService redisTraceService;
+    private final PlanCopilotService copilotService;
 
     public TripPlanningController(
             TripPlanningFacade tripPlanningFacade,
             PlanPersistenceService planPersistenceService,
             ChatService chatService,
-            RedisTraceService redisTraceService
+            RedisTraceService redisTraceService,
+            PlanCopilotService copilotService
     ) {
         this.tripPlanningFacade = tripPlanningFacade;
         this.planPersistenceService = planPersistenceService;
         this.chatService = chatService;
         this.redisTraceService = redisTraceService;
+        this.copilotService = copilotService;
     }
 
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("TripMind Java backend is healthy.");
+    }
+
+    @PostMapping("/{requestId}/copilot")
+    public CopilotResponse copilot(@PathVariable String requestId, @Valid @RequestBody CopilotRequest request) {
+        return copilotService.answer(requestId, request.message());
+    }
+
+    @PostMapping("/{requestId}/scenarios/{scenarioId}/apply")
+    public TripPlanResponse applyScenario(@PathVariable String requestId, @PathVariable String scenarioId) {
+        return copilotService.applyScenario(requestId, scenarioId);
     }
 
     @PostMapping("/chat")

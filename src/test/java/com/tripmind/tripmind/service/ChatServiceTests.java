@@ -37,6 +37,18 @@ class ChatServiceTests {
     private ChatService chatService;
 
     @Test
+    void totalBudgetIsNotMultipliedAndCostRequestsPreserveSpendingLimit() {
+        String sessionId = UUID.randomUUID().toString();
+        ChatResponse first = chatService.handleChat(new ChatRequest(sessionId,
+                "Plan Goa from Mumbai for 2 people, total budget INR 50000, round trip 2027-02-10 to 2027-02-14"));
+        assertThat(first.tripSnapshot()).containsEntry("budget", 50000).containsEntry("budgetScope", "total");
+        ChatResponse cheaper = chatService.handleChat(new ChatRequest(sessionId, "make it cheaper"));
+        assertThat(cheaper.tripSnapshot()).containsEntry("budget", 50000).containsEntry("vibe", "budget");
+        ChatResponse luxury = chatService.handleChat(new ChatRequest(sessionId, "more luxury"));
+        assertThat(luxury.tripSnapshot()).containsEntry("budget", 50000);
+    }
+
+    @Test
     void asksForTripTypeBeforePlanningInsteadOfAssumingRoundTrip() {
         String sessionId = UUID.randomUUID().toString();
 

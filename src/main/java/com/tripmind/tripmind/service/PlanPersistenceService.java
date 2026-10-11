@@ -193,7 +193,9 @@ public class PlanPersistenceService {
         session.setOrigin(request.origin());
         session.setDestination(request.destination());
         session.setTravelers(request.travelers());
-        session.setBudget(request.budget());
+        // Planning requests contain the total group allowance; chat retains the stated scope.
+        session.setBudget("per_person".equalsIgnoreCase(request.budgetScope())
+                ? request.budget() / Math.max(1, request.travelers()) : request.budget());
         session.setDepartureDate(request.departureDate());
         session.setReturnDate(request.returnDate());
         session.setTripType(request.tripType());
